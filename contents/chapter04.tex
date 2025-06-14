@@ -5,39 +5,38 @@
 \problem[date fun]
 Define a function that takes an integer \B{d} and string \B{m} as input and returns \B{true} just when \B{d} and \B{m} form a valid date. Here, a valid date has a month that is one of the following abbreviations: Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sept, Oct, Nov, Dec. The day must be a number that is between 1 and the minimum number of days in that month, inclusive. For example, if the month is Jan, then the day is between 1 and 31, inclusive, whereas if the month is Feb, then the day is between 1 and 28, inclusive. How terse (i.e., few and short lines of code) can you make your function? You can definitely do this in fewer than 12 lines.
 
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=OCaml]
 let valid_date (d : int) (m : string) =
   let max_days =
     match m with
-    | "Jan" | "Mar" | "May" | "Jul" | "Aug" | "Oct" | "Dec" -> 31
-    | "Apr" | "Jun" | "Sept" | "Nov" -> 30
-    | "Feb" -> 28
-    | _ -> 0 (* Invalid month abbreviation *)
+      | "Jan" | "Mar" | "May" | "Jul" | "Aug" | "Oct" | "Dec" -> 31
+      | "Apr" | "Jun" | "Sept" | "Nov" -> 30
+      | "Feb" -> 28
+      | _ -> 0 (* Invalid month abbreviation *)
   in
   d >= 1 && d <= max_days
 \end{lstlisting}
 
 \problem[fib]
-Define a recursive function \texttt{fib : int -> int}, such that \texttt{fib n} is the $n$th number in the Fibonacci sequence,
+Define a recursive function \code{fib : int -> int}, such that \code{fib n} is the $n$th number in the Fibonacci sequence,
 which is $1, 1, 2, 3, 5, 8, 13, \ldots$ That is:
 \begin{itemize}
-  \item $\texttt{fib } 1 = 1$
-  \item $\texttt{fib } 2 = 1$
-  \item $\texttt{fib } n = \texttt{fib } (n-1) + \texttt{fib } (n-2)$ for any $n > 2$
+  \item \code{fib 1 = 1}
+  \item \code{fib 2 = 1}
+  \item \code{fib n = fib (n - 1) + fib (n - 2)} for any $n > 2$
 \end{itemize}
-Test your function in the toplevel.
 
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=OCaml]
 let rec fib n =
   if n = 0 then 0
   else if n = 1 then 1
-  else fib (n-1) + fib (n-2)
+  else fib (n - 1) + fib (n - 2)
 \end{lstlisting}
 
 \problem[fib fast]
-Write a tail-recursive version of \texttt{fib}.
+Write a tail-recursive version of \code{fib}.
 
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=OCaml]
 let fib n =
   let rec fib_tail n a b =
     if n = 0 then a
@@ -48,19 +47,19 @@ let fib n =
 \end{lstlisting}
 
 \problem[divide]
-Write a function \texttt{divide : numerator:float -> denominator:float -> float}. Apply your function to 1.0 and 2.0.
+Write a function \code{divide : numerator:float -> denominator:float -> float}. Apply your function to 1.0 and 2.0.
 
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=OCaml]
 let divide ~numerator:x ~denominator:y = x /. y
 \end{lstlisting}
 
 \problem[average]
-Define an infix operator \texttt{+/.} to compute the average of two floating-point numbers. For example,
+Define an infix operator \code{+/.} to compute the average of two floating-point numbers. For example,
 \begin{itemize}
   \item $1.0 +/. 2.0 = 1.5$
   \item $0.0 +/. 0.0 = 0.0$
 \end{itemize}
 
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=OCaml]
 let (+/.) x y = (x +. y) /. 2.0
 \end{lstlisting}

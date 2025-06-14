@@ -1,0 +1,444 @@
+% File: contents/chapter05.tex
+
+\section*{Chapter 5. Data and Types}
+
+\problem[list expressions]
+\begin{itemize}
+  \item Construct a list that has the integers 1 through 5 in it. Use the square bracket notation for lists.
+  \item Construct the same list, but do not use the square bracket notation. Instead, use \code{::} and \code{[]}.
+  \item Construct the same list again. This time, the following expression must appear in your answer: \code{[2; 3; 4]}. Use the \code{@} operator, and do not use \code{::}.
+\end{itemize}
+
+\begin{lstlisting}[language=OCaml]
+let lst1 = [1; 2; 3; 4; 5]
+let lst2 = 1 :: 2 :: 3 :: 4 :: 5 :: []
+let lst3 = [1] @ [2; 3; 4] @ [5]
+\end{lstlisting}
+
+\problem[product]
+Write a function \code{product} that returns the product of all the elements in a list. The product of all the elements of an empty list is 1.
+
+\begin{lstlisting}[language=OCaml]
+let rec product = function
+  | [] -> 1
+  | h :: t -> h * product t
+\end{lstlisting}
+
+\problem[concat]
+Write a function that concatenates all the strings in a list. The concatenation of all the strings in an empty list is the empty string \code{""}.
+
+\begin{lstlisting}[language=OCaml]
+let rec concat = function
+  | [] -> ""
+  | h :: t -> h ^ concat t
+\end{lstlisting}
+
+\problem[patterns]
+Using pattern matching, write three functions, one for each of the following properties. Your functions should return \B{true} if the input list has the property and \B{false} otherwise.
+\begin{itemize}
+  \item the list's first element is \code{"bigred"}
+  \item the list has exactly two or four elements; do not use the \B{length} function
+  \item the first two elements of the list are equal
+\end{itemize}
+
+\begin{lstlisting}[language=Caml]
+let is_bigred = function
+  | "bigred" :: _ -> true
+  | _ -> false
+
+let two_or_four_elements = function
+  | _ :: _ :: [] -> true
+  | _ :: _ :: _ :: _ :: [] -> true
+  | _ -> false
+
+let eq_first_two = function
+  | a :: b :: _ -> a = b
+  | _ -> false
+\end{lstlisting}
+
+\problem[library]
+Consult the \code{List} standard library to solve these exercises:
+\begin{itemize}
+  \item Write a function that takes an \code{int list} and returns the fifth element of that list, if such an element exists. If the list has fewer than five elements, return 0. Hint: \code{List.length} and \code{List.nth}.
+  \item Write a function that takes an \code{int list} and returns the list sorted in descending order. Hint: \code{List.sort} with \code{Stdlib.compare} as its first argument, and \code{List.rev}.
+\end{itemize}
+
+\begin{lstlisting}[language=OCaml]
+let fifth_element lst =
+  if List.length lst >= 5 then List.nth lst 4 else 0
+
+let sort_list_descending lst = 
+  lst |> List.sort Stdlib.compare |> List.rev
+\end{lstlisting}
+
+\problem[library puzzle]
+\begin{itemize}
+  \item Write a function that returns the last element of a list. Your function may assume that the list is non-empty. Hint: Use two library functions, and do not write any pattern matching code of your own.
+  \item Write a function \code{any\_zeros : int list -> bool} that returns \B{true} if and only if the input list contains at least one 0. Hint: use one library function, and do not write any pattern matching code of your own.
+\end{itemize}
+Your solutions will be only one or two lines of code each.
+
+\begin{lstlisting}[language=OCaml]
+let last_element lst = 
+  List.nth lst (List.length lst - 1)
+
+let last_element' lst = 
+  lst |> List.rev |> List.hd
+
+let any_zeros lst = 
+  List.exists (fun x -> x = 0) lst
+\end{lstlisting}
+
+\problem[take drop]
+\begin{itemize}
+  \item Write a function \code{take : int -> 'a list -> 'a list} such that \code{take n lst} returns the first \code{n} elements of \code{lst}. If \code{lst} has fewer than \code{n} elements, return all of them.
+  \item Write a function \code{drop : int -> 'a list -> 'a list} such that \code{drop n lst} returns all but the first \code{n} elements of \code{lst}. If \code{lst} has fewer than \code{n} elements, return the empty list.
+\end{itemize}
+
+\begin{lstlisting}[language=OCaml]
+let rec take n lst =
+  if n = 0 then [] else match lst with
+    | [] -> []
+    | x :: xs -> x :: take (n - 1) xs
+
+let rec drop n lst =
+  if n = 0 then lst else match lst with
+    | [] -> []
+    | x :: xs -> drop (n - 1) xs
+\end{lstlisting}
+
+\problem[take drop tail]
+Revise your solutions for \code{take} and \code{drop} to be tail recursive, if they aren't already. Test them on long lists with large
+values of \code{n} to see whether they run out of stack space. To construct long lists, use the \code{-{-}} operator from the lists section.
+
+\begin{lstlisting}[language=OCaml]
+let take_tr n lst =
+	let rec take' n lst acc =
+	  match (n, lst) with
+	  | 0, _ -> List.rev acc
+	  | _, [] -> List.rev acc
+	  | n, hd :: tl -> take' (n - 1) tl (hd :: acc)
+	in
+	take' n lst []
+
+let drop_tr = drop (* which is already tail recursive *)
+
+let ( -- ) i j =
+  let rec from i j acc = if i > j then acc else from i (j - 1) (j :: acc) in
+  from i j []
+\end{lstlisting}
+
+\problem[unimodal]
+Write a function \code{is\_unimodal : int list -> bool} that takes an integer list and returns whether that list is unimodal. A unimodal list is a list that monotonically increases to some maximum value then monotonically decreases after that value. Either or both segments (increasing or decreasing) may be empty. A constant list is unimodal, as is the empty list.
+
+\begin{lstlisting}[language=Caml]
+let is_unimodal lst =
+  let rec is_decreasing = function
+    | [] | [_] -> true
+    | x :: y :: rest -> x >= y && is_decreasing (y :: rest)
+  in
+  let rec find_peak = function
+    | [] | [_] -> true
+    | x :: y :: rest ->
+      if x <= y then find_peak (y :: rest) else is_decreasing (x :: y :: rest)
+  in
+  find_peak lst
+\end{lstlisting}
+
+\problem[powerset]
+Write a function \code{powerset : int list -> int list list} that takes a set \code{S} represented as a list and returns the set of all subsets of \code{S}. The order of subsets in the powerset and the order of elements in the subsets do not matter.
+Hint: Consider the recursive structure of this problem. Suppose you already have \code{p}, such that \code{p = powerset s}. How could you use \code{p} to compute \code{powerset (x :: s)}?
+
+\begin{lstlisting}[language=OCaml]
+let rec powerset = function
+  | [] -> [ [] ]
+  | x :: s -> let p = powerset s in
+    List.map (List.cons x) p @ p
+\end{lstlisting}
+
+\problem[print int list rec]
+Write a function \code{print\_int\_list : int list -> unit} that prints its input list, one number per line.
+
+\begin{lstlisting}[language=OCaml]
+let rec print_int_list = function
+  | [] -> ()
+  | hd :: tl -> print_endline (string_of_int hd); print_int_list tl
+\end{lstlisting}
+
+\problem[print int list iter]
+Write a function \code{print\_int\_list' : int list -> unit} whose specification is the same as \\
+\code{print\_int\_list}. Do not use the keyword \code{rec} in your solution, but instead to use the List module function \code{List.iter}.
+
+\begin{lstlisting}[language=OCaml]
+let print_int_list' lst =
+  List.iter (fun x -> print_endline (string_of_int x)) lst
+\end{lstlisting}
+
+\problem[student]
+Assume the following type definition:
+\code{type student = \{first\_name : string; last\_name : string; gpa : float\}} \\
+Give OCaml expressions that have the following types:
+\begin{itemize}
+  \item \code{student}
+  \item \code{student -> string * string} (a function that extracts the student's name)
+  \item \code{string -> string -> float -> student} (a function that creates a student record)
+\end{itemize}
+
+\begin{lstlisting}[language=OCaml]
+type student = { first_name : string ; last_name : string ; gpa : float }
+
+(* expression with type [student] *)
+let s =
+	{ first_name = "Ezra"; last_name = "Cornell"; gpa = 4.3 }
+	
+(* expression with type [student -> string * string] *)
+let get_full_name student =
+	student.first_name, student.last_name
+	
+(* expression with type [string -> string -> float -> student] *)
+let make_stud first last g =
+	{ first_name = first; last_name = last; gpa=g }
+\end{lstlisting}
+
+
+\problem[pokerecord]
+Here is a variant that represents a few Pokémon types:
+\code{type poketype = Normal | Fire | Water}
+\begin{itemize}
+  \item Define the type \code{pokemon} to be a record with fields \code{name} (a string), \code{hp} (an integer), and \code{ptype} (a \code{poketype}).
+  \item Create a record named \code{charizard} of type \code{pokemon} that represents a Pokémon with 78 HP and Fire type.
+  \item Create a record named \code{squirtle} of type \code{pokemon} that represents a Pokémon with 44 HP and Water type.
+\end{itemize}
+
+\begin{lstlisting}[language=OCaml]
+type poketype = Normal | Fire | Water
+
+(* define the type pokemon record *)
+type pokemon = { name : string ; hp : int ; ptype : poketype }
+	
+let charizard = { name = "charizard"; hp = 78; ptype = Fire }
+	
+let squirtle = { name = "squirtle"; hp = 44; ptype = Water }
+\end{lstlisting}
+
+\problem[safe hd and tl]
+Write a function \code{safe_hd : 'a list -> 'a option} that returns \code{Some x} if the head of the input list is \code{x}, and \code{None} if the input list is empty.
+Also write a function \code{safe_tl : 'a list -> 'a list option} that returns the tail of the list, or \code{None} if the list is empty.
+
+\begin{lstlisting}[language=OCaml]
+let safe_hd = function
+  | [] -> None
+  | h::_ -> Some h
+
+let safe_tl = function
+  | [] -> None
+  | _::t -> Some t
+\end{lstlisting}
+
+\problem[pokefun]
+Write a function \code{max\_hp : pokemon list -> pokemon option} that, given a list of \code{pokemon}, finds the Pokémon with the highest HP.
+
+\begin{lstlisting}[language=OCaml]
+let max_hp = function
+  | [] -> None
+  | h :: t ->
+    Some (List.fold_left (fun acc p -> if p.hp > acc.hp then p else acc) h t)
+\end{lstlisting}
+
+\problem[date before]
+Define a date-like triple to be a value of type \code{int * int * int}. A date is a date-like triple whose first part is a positive year, second part is a month between 1 and 12, and third part is a day between 1 and 31 (or 30, 29, or 28, depending on the month and year). You may ignore leap years.
+Write a function \code{is\_before} that takes two dates as input and evaluates to \B{true} if the first argument is a date that comes before the second argument. (If the two dates are the same, the result is \B{false}.)
+
+\begin{lstlisting}[language=OCaml]
+type date = int * int * int
+
+let is_before date1 date2 =
+	let (y1, m1, d1) = date1 in
+	let (y2, m2, d2) = date2 in
+	y1 < y2 || (y1 = y2 && m1 < m2) || (y1 = y2 && m1 = m2 && d1 < d2)
+\end{lstlisting}
+
+\problem[earliest date]
+Write a function \code{earliest : (int * int * int) list -> (int * int * int) option}. It evaluates to \code{None} if the input list is empty, and to \code{Some d} if date \code{d} is the earliest date in the list. Hint: use \code{is\_before}.
+
+\begin{lstlisting}[language=OCaml]
+let rec earliest = function
+  | [] -> None
+  | d1::t -> begin
+      match earliest t with
+      | None -> Some d1
+      | Some d2 -> Some (if is_before d1 d2 then d1 else d2)
+    end
+\end{lstlisting}
+
+\problem[assoc list]
+Use the functions \code{insert} and \code{lookup} from the section on association lists to construct an association list that maps the integer 1 to the string ``one'', 2 to ``two'', and 3 to ``three''. Lookup the key 2. Lookup the key 4.
+
+\begin{lstlisting}[language=OCaml]
+let insert k v d = (k,v)::d
+
+(* find the value v to which key k is bound, if any, in the assocation list *)
+let rec lookup k = function
+	| [] -> None
+	| (k',v)::t -> if k=k' then Some v else lookup k t
+
+let dict = insert 3 "three" (insert 2 "two" (insert 1 "one" []))
+let some_two = lookup 2 dict
+let none = lookup 4 dict
+\end{lstlisting}
+
+\problem[cards]
+\begin{itemize}
+  \item Define a variant type \code{suit} that represents the four suits, \code{Clubs}, \code{Diamonds}, \code{Hearts}, and \code{Spades}, in a standard 52-card deck. All the constructors of your type should be constant.
+  \item Define a type \code{rank} that represents the possible ranks of a card: 2, 3, \ldots, 10, Jack, Queen, King, or Ace.
+  \item Define a type \code{card} that represents the suit and rank of a single card. Make it a record with two fields.
+  \item Define a few values of type card: the Ace of Clubs, the Queen of Hearts, the Two of Diamonds, the Seven of Spades.
+\end{itemize}
+
+\begin{lstlisting}[language=OCaml]
+type suit = Hearts | Spades | Clubs | Diamonds
+
+type rank = Number of int | Ace | Jack | Queen | King
+
+type card = { suit: suit; rank: rank }
+
+let ace_of_clubs : card = { suit = Clubs; rank = Ace }
+let queen_of_hearts : card = { suit = Hearts; rank = Queen }
+let two_of_diamonds : card = { suit = Diamonds; rank = Number 2 }
+let seven_of_spades : card = { suit = Spades; rank = Number 7 }
+\end{lstlisting}
+
+\problem[quadrant]
+Complete the quadrant function below, which should return the quadrant of the given x, y point. Points that lie on an axis do not belong to any quadrant. Hints: (a) define a helper function for the sign of an integer, (b) match against a pair.
+
+\begin{lstlisting}[language=OCaml]
+type quad = I | II | III | IV
+type sign = Neg | Zero | Pos
+
+(** [sign x] is [Zero] if [x = 0]; [Pos] if [x > 0]; and [Neg] if [x < 0]. *)
+let sign x =
+	if x = 0 then Zero
+	else if x > 0 then Pos
+	else Neg
+
+(** [quadrant (x,y)] is [Some q] if [(x, y)] lies in quadrant [q], or [None] if
+		it lies on an axis. *)
+let quadrant (x,y) =
+	match sign x, sign y with
+	| Pos, Pos -> Some I
+	| Neg, Pos -> Some II
+	| Neg, Neg -> Some III
+	| Pos, Neg -> Some IV
+	| _ -> None
+\end{lstlisting}
+
+
+\problem[quadrant when]
+Rewrite the quadrant function to use the \code{when} syntax. You won't need your helper function from before.
+
+\begin{lstlisting}[language=OCaml]
+let quadrant_when = function
+  | x,y when x > 0 && y > 0 -> Some I
+  | x,y when x < 0 && y > 0 -> Some II
+  | x,y when x < 0 && y < 0 -> Some III
+  | x,y when x > 0 && y < 0 -> Some IV
+  | _ -> None
+\end{lstlisting}
+
+
+\problem[depth]
+Write a function \code{depth : 'a tree -> int} that returns the number of nodes in any longest path from the root to a leaf. For example, the depth of an empty tree (simply \code{Leaf}) is 0. Hint: there is a library function \code{max : 'a -> 'a -> 'a}.
+
+\begin{lstlisting}[language=OCaml]
+type 'a tree = Leaf | Node of 'a * 'a tree * 'a tree
+
+let rec depth = function
+	| Leaf -> 0
+	| Node (_, left, right) -> 1 + max (depth left) (depth right)
+\end{lstlisting}
+
+
+\problem[shape]
+Write a function \code{same\_shape : 'a tree -> 'b tree -> bool} that determines whether two trees have the same shape, regardless of whether the values they carry at each node are the same. Hint: use a pattern match with three branches, where the expression being matched is a pair of trees.
+
+\begin{lstlisting}[language=OCaml]
+let rec same_shape t1 t2 =
+  match t1, t2 with
+  | Leaf, Leaf -> true
+  | Node (_,l1,r1), Node (_,l2,r2) -> (same_shape l1 l2) && (same_shape r1 r2)
+  | _ -> false
+\end{lstlisting}
+
+\problem[list max exn]
+Write a function \code{list\_max : int list -> int} that returns the maximum integer in a list, or raises \code{Failure "list\_max"} if the list is empty.
+
+\begin{lstlisting}[language=OCaml]
+let list_max = function
+  | [] -> failwith "list_max"
+  | h :: t -> List.fold_left max h t
+\end{lstlisting}
+
+\problem[list max exn string]
+Write a function \code{list\_max\_string : int list -> string} that returns a string containing the maximum integer in a list, or the string \code{"empty"} if the list is empty.
+
+\begin{lstlisting}[language=OCaml]
+let list_max_string lst =
+  try string_of_int (list_max lst) with
+  | Failure _ -> "empty"
+\end{lstlisting}
+
+\problem[is bst]
+Write a function \code{is\_bst : ('a * 'b) tree -> bool} that returns \B{true} if and only if the given tree satisfies the binary search tree invariant. An efficient version of this function that visits each node at most once is somewhat tricky to write. Hint: write a recursive helper function that takes a tree and either gives you (i) the minimum and maximum value in the tree, or (ii) tells you that the tree is empty, or (iii) tells you that the tree does not satisfy the invariant. You will need to define a new variant type for the return type of your helper function.
+
+\begin{lstlisting}
+type 'a tree =
+  | Leaf
+  | Node of 'a * 'a tree * 'a tree
+
+type 'a bst_check =
+  | Empty
+  | Invalid
+  | Valid of 'a * 'a (* min, max *)
+
+let rec is_bst_helper (t : 'a tree) : 'a bst_check =
+  match t with
+  | Leaf -> Empty
+  | Node (value, left, right) -> (
+    match (is_bst_helper left, is_bst_helper right) with
+    | Empty, Empty -> Valid (value, value)
+    | Valid (lmin, lmax), Empty ->
+      if lmax <= value then Valid (lmin, value) else Invalid
+    | Empty, Valid (rmin, rmax) ->
+      if value <= rmin then Valid (value, rmax) else Invalid
+    | Valid (lmin, lmax), Valid (rmin, rmax) ->
+      if lmax <= value && value <= rmin then Valid (lmin, rmax) else Invalid
+    | _ -> Invalid)
+
+let is_bst (t : 'a tree) : bool =
+  match is_bst_helper t with
+  | Invalid -> false
+  | _ -> true
+\end{lstlisting}
+
+\problem[quadrant poly]
+Modify your definition of quadrant to use polymorphic variants. The types of your functions should become these:
+\begin{lstlisting}[language=OCaml]
+val sign : int -> [> `Neg | `Pos | `Zero ]
+val quadrant : int * int -> [> `I | `II | `III | `IV ] option
+\end{lstlisting}
+
+\begin{lstlisting}[language=OCaml]
+let sign_poly x : [> `Neg | `Pos | `Zero] =
+  if x < 0 then `Neg
+  else if x = 0 then `Zero
+  else `Pos
+
+let quadrant (x,y) : [> `I | `II | `III | `IV ] option =
+  match sign_poly x, sign_poly y with
+  | `Pos, `Pos -> Some `I
+  | `Neg, `Pos -> Some `II
+  | `Neg, `Neg -> Some `III
+  | `Pos, `Neg -> Some `IV
+  | _ -> None
+\end{lstlisting}
+

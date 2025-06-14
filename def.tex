@@ -1,0 +1,79 @@
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,
+    urlcolor=cyan,
+}
+
+\definecolor{backcolour}{rgb}{0.97, 0.97, 0.95}
+\definecolor{keywordpink}{rgb}{0.8, 0.2, 0.5}
+\definecolor{typeblue}{rgb}{0.2, 0.4, 0.8}
+\definecolor{stringorange}{rgb}{0.8, 0.4, 0.0}
+\definecolor{commentgray}{rgb}{0.55, 0.55, 0.55}
+\definecolor{valpurple}{rgb}{0.58,0,0.82}
+\definecolor{operatorred}{rgb}{0.65, 0.15, 0.15}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{typevargreen}{rgb}{0.1, 0.5, 0.3}
+
+\lstdefinelanguage{OCaml}{
+    morekeywords={let, rec, in, if, then, else, match, with, function, and, try, raise, begin, end},
+    otherkeywords={|,=,::,@,<,>,-,+,/,!,->},
+    morekeywords=[2]{type, module, sig, end, struct, open, include, val},
+    morekeywords=[3]{int, string, bool, float, list, option, unit},
+    morekeywords=[4]{true, false, Some, None, ref, as},
+    morekeywords=[5]{'a, 'b, 'c, 't, 'k, 'v},
+    sensitive=true,
+    morecomment=[s]{(*}{*)},
+    morestring=[b]",
+}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\itshape\color{commentgray},
+    keywordstyle=\color{keywordpink}\bfseries,
+    keywordstyle=[2]\color{typeblue}\bfseries,
+    keywordstyle=[3]\color{typeblue},
+    keywordstyle=[4]\color{valpurple},
+    keywordstyle=[5]\color{typevargreen},
+    stringstyle=\color{stringorange},
+    basicstyle=\ttfamily\footnotesize,
+    numberstyle=\tiny\color{codegray},
+    numbersep=5pt,
+    tabsize=2,
+    showstringspaces=false,
+    breakatwhitespace=false,
+    breaklines=true,
+    literate={`}{{\textasciigrave}}{1}
+        {'}{{\textquotesingle}}{1},
+    language=OCaml
+}
+
+\lstset{style=mystyle}
+
+\lstdefinestyle{inlinestyle}{
+    basicstyle=\ttfamily,
+    keepspaces=true,
+}
+
+\NewDocumentCommand{\code}{m}{%
+    \lstinline[style=inlinestyle]|#1|%
+}
+
+\newcommand{\B}[1]{\textbf{#1}}
+
+\newcounter{problemnum}
+\pretocmd{\section}{\setcounter{problemnum}{0}}{}{}
+\NewDocumentCommand{\problem}{o}{%
+    \stepcounter{problemnum}%
+    \IfNoValueTF{#1}{%
+        \subsection*{Problem \theproblemnum}%
+    }{%
+        \subsection*{Problem \theproblemnum: #1}%
+    }%
+}
+
+\titleformat{\section}
+{\normalfont\Large\bfseries\centering}
+{\thesection}
+{1em}
+{}

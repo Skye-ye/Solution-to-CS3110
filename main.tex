@@ -1,70 +1,30 @@
 \documentclass{article}
 
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
 \usepackage{amsmath}
 \usepackage{graphicx}
-\usepackage[T1]{fontenc}
 \usepackage[margin=1in]{geometry}
 \usepackage{hyperref}
-\hypersetup{
-    colorlinks=true,
-    linkcolor=blue,
-    filecolor=magenta,      
-    urlcolor=cyan,
-}
 \usepackage{booktabs}
 \usepackage{listings}
 \usepackage{xcolor}
 \usepackage{xparse}
 \usepackage{titlesec}
 
-% --- Code Style Definition ---
-\definecolor{codegreen}{rgb}{0,0.6,0}
-\definecolor{codegray}{rgb}{0.5,0.5,0.5}
-\definecolor{codepurple}{rgb}{0.58,0,0.82}
-\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
-
-\lstdefinestyle{mystyle}{
-    backgroundcolor=\color{backcolour}, commentstyle=\color{codegreen},
-    keywordstyle=\color{magenta}, numberstyle=\tiny\color{codegray},
-    stringstyle=\color{codepurple}, basicstyle=\ttfamily\footnotesize,
-    breakatwhitespace=false, breaklines=true, captionpos=b,
-    keepspaces=true, numbers=left, numbersep=5pt, showspaces=false,
-    showstringspaces=false, showtabs=false, tabsize=2
-}
-\lstset{style=mystyle}
-
-% --- Problem Environment ---
-\newcounter{problemnum}
-\NewDocumentCommand{\problem}{o}{%
-  \stepcounter{problemnum}%
-  \IfNoValueTF{#1}{%
-    % Case 1: No title provided, e.g., \problem
-    \subsection*{Problem \theproblemnum}%
-  }{%
-    % Case 2: Title provided, e.g., \problem[My Title]
-    \subsection*{Problem \theproblemnum: #1}%
-  }%
-}
-\newcommand{\B}[1]{\textbf{#1}}
-\titleformat{\section}
-  {\normalfont\Large\bfseries\centering}
-  {\thesection}
-  {1em}
-  {}
-
-% =================================================
-% --- DOCUMENT BEGINS HERE ---
-% =================================================
-\begin{document}
-
-% --- Title ---
 \title{Solution to CS3110}
 \author{Sky}
+
+\input{def.tex}
+
+\begin{document}
+
 \maketitle
 
 \hrule
 \vspace{1em}
 
 \input{contents/chapter04.tex}
+\input{contents/chapter05.tex}
 
 \end{document}
