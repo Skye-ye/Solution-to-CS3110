@@ -1,0 +1,256 @@
+% File: contents/chapter06.tex
+
+\section*{Chapter 6. Higher-Order Programming}
+
+\problem[repeat]
+Generalize \code{twice} to a function \code{repeat}, such that \code{repeat f n x} applies \code{f} to \code{x} a total of \code{n} times. That is,
+\begin{itemize}
+  \item \code{repeat f 0 x} yields \code{x}
+  \item \code{repeat f 1 x} yields \code{f x}
+  \item \code{repeat f 2 x} yields \code{f (f x)} (which is the same as \code{twice f x})
+  \item \code{repeat f 3 x} yields \code{f (f (f x))}
+  \item ...
+\end{itemize}
+
+\begin{lstlisting}[language=OCaml]
+let rec repeat f n x =
+  if n = 0 then x else repeat f (n - 1) (f x)
+\end{lstlisting}
+
+\problem[product]
+Use \code{fold_left} to write a function \code{product_left} that computes the product of a list of floats. The product of the empty list is \code{1.0}. Hint: recall how we implemented sum in just one line of code in lecture.
+Use \code{fold_right} to write a function \code{product_right} that computes the product of a list of floats. Same hint applies.
+
+\begin{lstlisting}[language=OCaml]
+let product_left lst = List.fold_left ( *. ) 1.0 lst
+
+let product_right lst = List.fold_right ( *. ) lst 1.0
+\end{lstlisting}
+
+\problem[terse product]
+How terse can you make your solutions to the product exercise? Hints: you need only one line of code for each, and you do not need the \code{fun} keyword. For \code{fold_left}, your function definition does not even need to explicitly take a list argument. If you use \code{ListLabels}, the same is true for \code{fold_right}.
+
+\begin{lstlisting}[language=OCaml]
+let terse_product_left = List.fold_left ( *. ) 1.0
+
+let terse_product_right = ListLabels.fold_right ~f:( *. ) ~init:1.0
+\end{lstlisting}
+
+\problem[\texttt{sum\_cube\_odd}]
+Write a function \code{sum_cube_odd n} that computes the sum of the cubes of all the odd numbers between 0 and \code{n} inclusive. Do not write any new recursive functions. Instead, use the functionals \code{map}, \code{fold}, and \code{filter}, and the \code{( -- )} operator (defined in the discussion of pipelining).
+
+\begin{lstlisting}[language=OCaml]
+let rec ( -- ) i j = if i > j then [] else i :: (i + 1 -- j)
+
+let sum_cube_odd n =
+	let odd x = x mod 2 = 1 in
+	let cube x = x * x * x in
+	List.filter odd (0 -- n) |> List.map cube |> List.fold_left (+) 0
+\end{lstlisting}
+
+\problem[\texttt{sum\_cube\_odd} pipeline]
+Rewrite the function \code{sum_cube_odd} to use the pipeline operator \code{|>}.
+
+\begin{lstlisting}[language=OCaml]
+let sum_cube_odd_p n =
+  0 -- n
+  |> List.filter (fun i -> i mod 2 = 1)
+  |> List.map (fun i -> i * i * i)
+  |> List.fold_left (+) 0
+\end{lstlisting}
+
+\problem[exists]
+Consider writing a function \code{exists: ('a -> bool) -> 'a list -> bool}, such that \code{exists p [a1; ...; an]} returns whether at least one element of the list satisfies the predicate \code{p}. That is, it evaluates the same as \code{(p a1) \|\| (p a2) \|\| ... \|\| (p an)}. When applied to an empty list, it evaluates to \code{false}.
+Write three solutions to this problem, as we did above:
+\begin{itemize}
+  \item \code{exists_rec}, which must be a recursive function that does not use the \code{List} module,
+  \item \code{exists_fold}, which uses either \code{List.fold_left} or \code{List.fold_right}, but not any other \code{List} module functions nor the \code{rec} keyword, and
+  \item \code{exists_lib}, which uses any \code{List} module functions except \code{fold_left} or \code{fold_right}, and does not use \code{rec}.
+\end{itemize}
+
+\begin{lstlisting}[language=OCaml]
+let rec exists_rec p = function
+  | [] -> false
+  | hd :: tl -> p hd || exists_rec p tl
+
+let exists_fold p lst = List.fold_left (fun acc x -> acc || p x) false lst
+
+let exists_lib = List.exists
+\end{lstlisting}
+
+\problem[account balance]
+Write a function which, given a list of numbers representing debits, deducts them from an account balance, and finally returns the remaining amount in the balance. Write three versions: \code{fold_left}, \code{fold_right}, and a direct recursive implementation.
+
+\begin{lstlisting}[language=OCaml]
+let balance_left balance debits = 
+  List.fold_left ( -. ) balance debits
+
+let balance_right balance debits = 
+  List.fold_right (fun d b -> b -. d) debits balance
+
+let rec balance_rec balance = function
+  | [] -> balance
+  | h :: t -> balance_rec (balance -. h) t
+\end{lstlisting}
+
+\problem[library uncurried]
+Here is an uncurried version of \code{List.nth}:
+\begin{lstlisting}[language=OCaml]
+let uncurried_nth (lst, n) = List.nth lst n
+\end{lstlisting}
+In a similar way, write uncurried versions of these library functions:
+\begin{itemize}
+  \item \code{List.append}
+  \item \code{Char.compare}
+  \item \code{Stdlib.max}
+\end{itemize}
+
+\begin{lstlisting}[language=OCaml]
+let uncurried_append (lst,e) = List.append lst e
+
+let uncurried_compare (c1,c2) = Char.compare c1 c2
+
+let uncurried_max (n1,n2) = Stdlib.max n1 n2
+\end{lstlisting}
+
+\problem[map composition]
+Show how to replace any expression of the form \code{List.map f (List.map g lst)} with an equivalent expression that calls \code{List.map} only once.
+
+\begin{lstlisting}[language=OCaml]
+List.map (fun elt -> f (g elt)) lst
+List.map (f @@ g) lst
+\end{lstlisting}
+
+\problem[more list fun]
+Write functions that perform the following computations. Each function that you write should use one of \code{List.fold}, \code{List.map} or \code{List.filter}. To choose which of those to use, think about what the computation is doing: combining, transforming, or filtering elements.
+\begin{itemize}
+  \item Find those elements of a list of strings whose length is strictly greater than 3.
+  \item Add \code{1.0} to every element of a list of floats.
+  \item Given a list of strings \code{strs} and another string \code{sep}, produce the string that contains every element of \code{strs} separated by \code{sep}. For example, given inputs \code{["hi";"bye"]} and \code{","}, produce \code{"hi,bye"}, being sure not to produce an extra comma either at the beginning or end of the result string.
+\end{itemize}
+
+\begin{lstlisting}[language=OCaml]
+let at_least_three lst =
+  List.filter (fun s -> String.length s > 3) lst
+
+let add_one lst =
+  List.map (fun x -> x +. 1.0) lst
+
+let join_with strs sep =
+  match strs with
+  | [] -> ""
+  | x :: xs ->
+    List.fold_left (fun combined s -> combined ^ sep ^ s) x xs
+\end{lstlisting}
+
+\problem[association list keys]
+Recall that an association list is an implementation of a dictionary in terms of a list of pairs, in which we treat the first component of each pair as a key and the second component as a value.
+Write a function \code{keys: ('a * 'b) list -> 'a list} that returns a list of the unique keys in an association list. Since they must be unique, no value should appear more than once in the output list. The order of values output does not matter. How compact and efficient can you make your solution? Can you do it in one line and linearithmic space and time? Hint: \code{List.sort_uniq}.
+
+\begin{lstlisting}[language=OCaml]
+(* here are a few solutions of varying efficiency *)
+
+(* returns: a list of the unique keys in [lst] in no particular order.
+ * efficiency:  O(n^2) time, where n is the number of elements in [lst],
+ * and O(n) stack space.
+*)
+let keys1 lst =
+  List.fold_right
+    (fun (k, _) acc -> k :: List.filter (fun k2 -> k <> k2) acc)
+    lst
+    []
+
+(* returns: a list of the unique keys in [lst] in no particular order.
+ * efficiency:  O(n^2) time, where n is the number of elements in [lst],
+ * and O(1) stack space.
+*)
+let keys2 lst =
+  List.fold_left
+    (fun acc (k, _) -> if List.exists ((=) k) acc then acc else k::acc)
+    []
+    lst
+
+(* returns: a list of the unique keys in [lst] in no particular order.
+ * efficiency:  O(n log n) time, where n is the number of elements in [lst],
+ * and O(log n) stack space.
+*)
+let keys3 lst =
+  lst
+  |> List.rev_map fst
+  |> List.sort_uniq Stdlib.compare
+\end{lstlisting}
+
+\problem[valid matrix]
+A mathematical matrix can be represented with lists. In row-major representation, this matrix
+\[
+  \begin{bmatrix}
+    1 & 1 & 1 \\
+    9 & 8 & 7
+  \end{bmatrix}
+\]
+would be represented as the list \code{[[1; 1; 1]; [9; 8; 7]]}. Let's represent a row vector as an \code{int list}. For example, \code{[9; 8; 7]} is a row vector.
+A valid matrix is an \code{int list list} that has at least one row, at least one column, and in which every column has the same number of rows. There are many values of type \code{int list list} that are invalid, for example,
+\begin{itemize}
+  \item \code{[]}
+  \item \code{[[1; 2]; [3]]}
+\end{itemize}
+Implement a function \code{is_valid_matrix: int list list -> bool} that returns whether the input matrix is valid.
+
+\begin{lstlisting}[language=OCaml]
+let is_valid_matrix = function
+  | [] -> false
+  | r :: rows ->
+    let m = List.length r in
+    m > 0 && List.for_all (fun r' -> m = List.length r') rows
+\end{lstlisting}
+
+\problem[row vector add]
+Implement a function \code{add_row_vectors: int list -> int list -> int list} for the element-wise addition of two row vectors. For example, the addition of \code{[1; 1; 1]} and \code{[9; 8; 7]} is \code{[10; 9; 8]}. If the two vectors do not have the same number of entries, the behavior of your function is unspecified--that is, it may do whatever you like. Hint: there is an elegant one-line solution using \code{List.map2}.
+
+\begin{lstlisting}[language=OCaml]
+let add_row_vectors v1 v2 = List.map2 ( + ) v1 v2
+\end{lstlisting}
+
+\problem[matrix add]
+Implement a function \code{add_matrices: int list list -> int list list -> int list list} for matrix addition. If the two input matrices are not the same size, the behavior is unspecified. Hint: there is an elegant one-line solution using \code{List.map2} and \code{add_row_vectors}.
+
+\begin{lstlisting}[language=OCaml]
+let add_matrices = List.map2 add_row_vectors
+\end{lstlisting}
+
+\problem[matrix multiply]
+Implement a function \code{multiply_matrices: int list list -> int list list -> int list list} for \\ matrix multiplication. If the two input matrices are not of sizes that can be multiplied together, the behavior is unspecified. Unit test the function. Hint: define functions for matrix transposition and row vector dot product.
+
+\begin{lstlisting}[language=OCaml]
+let dot_product = List.fold_left2 (fun acc x y -> acc + x * y) 0
+
+let rec transpose = function
+  | [] | [] :: _ -> []
+  | rows ->
+      let heads = List.map List.hd rows in
+      let tails = List.map List.tl rows in
+      heads :: transpose tails
+
+(* Validation helper *)
+let validate_matrices m1 m2 =
+  match m1, m2 with
+  | [], _ | _, [] -> false
+  | _ :: _, [] :: _ -> false
+  | rows1, rows2 ->
+      let cols1 = List.length (List.hd rows1) in
+      let cols2 = List.length (List.hd rows2) in
+      cols1 = List.length rows2 &&
+      List.for_all (fun row -> List.length row = cols1) rows1 &&
+      List.for_all (fun row -> List.length row = cols2) rows2
+
+let matrix_multiply m1 m2 =
+  if not (validate_matrices m1 m2) then
+    failwith "Invalid matrix dimensions for multiplication"
+  else
+    let m2_t = transpose m2 in
+    List.map (fun row1 ->
+      List.map (fun col2 ->
+        dot_product row1 col2
+      ) m2_t
+    ) m1
+\end{lstlisting}
