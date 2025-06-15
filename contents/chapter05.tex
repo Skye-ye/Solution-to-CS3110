@@ -4,9 +4,9 @@
 
 \problem[list expressions]
 \begin{itemize}
-  \item Construct a list that has the integers 1 through 5 in it. Use the square bracket notation for lists.
-  \item Construct the same list, but do not use the square bracket notation. Instead, use \code{::} and \code{[]}.
-  \item Construct the same list again. This time, the following expression must appear in your answer: \code{[2; 3; 4]}. Use the \code{@} operator, and do not use \code{::}.
+	\item Construct a list that has the integers 1 through 5 in it. Use the square bracket notation for lists.
+	\item Construct the same list, but do not use the square bracket notation. Instead, use \code{::} and \code{[]}.
+	\item Construct the same list again. This time, the following expression must appear in your answer: \code{[2; 3; 4]}. Use the \code{@} operator, and do not use \code{::}.
 \end{itemize}
 
 \begin{lstlisting}[language=OCaml]
@@ -36,9 +36,9 @@ let rec concat = function
 \problem[patterns]
 Using pattern matching, write three functions, one for each of the following properties. Your functions should return \B{true} if the input list has the property and \B{false} otherwise.
 \begin{itemize}
-  \item the list's first element is \code{"bigred"}
-  \item the list has exactly two or four elements; do not use the \B{length} function
-  \item the first two elements of the list are equal
+	\item the list's first element is \code{"bigred"}
+	\item the list has exactly two or four elements; do not use the \B{length} function
+	\item the first two elements of the list are equal
 \end{itemize}
 
 \begin{lstlisting}[language=Caml]
@@ -59,8 +59,8 @@ let eq_first_two = function
 \problem[library]
 Consult the \code{List} standard library to solve these exercises:
 \begin{itemize}
-  \item Write a function that takes an \code{int list} and returns the fifth element of that list, if such an element exists. If the list has fewer than five elements, return 0. Hint: \code{List.length} and \code{List.nth}.
-  \item Write a function that takes an \code{int list} and returns the list sorted in descending order. Hint: \code{List.sort} with \code{Stdlib.compare} as its first argument, and \code{List.rev}.
+	\item Write a function that takes an \code{int list} and returns the fifth element of that list, if such an element exists. If the list has fewer than five elements, return 0. Hint: \code{List.length} and \code{List.nth}.
+	\item Write a function that takes an \code{int list} and returns the list sorted in descending order. Hint: \code{List.sort} with \code{Stdlib.compare} as its first argument, and \code{List.rev}.
 \end{itemize}
 
 \begin{lstlisting}[language=OCaml]
@@ -73,8 +73,8 @@ let sort_list_descending lst =
 
 \problem[library puzzle]
 \begin{itemize}
-  \item Write a function that returns the last element of a list. Your function may assume that the list is non-empty. Hint: Use two library functions, and do not write any pattern matching code of your own.
-  \item Write a function \code{any\_zeros : int list -> bool} that returns \B{true} if and only if the input list contains at least one 0. Hint: use one library function, and do not write any pattern matching code of your own.
+	\item Write a function that returns the last element of a list. Your function may assume that the list is non-empty. Hint: Use two library functions, and do not write any pattern matching code of your own.
+	\item Write a function \code{any\_zeros : int list -> bool} that returns \B{true} if and only if the input list contains at least one 0. Hint: use one library function, and do not write any pattern matching code of your own.
 \end{itemize}
 Your solutions will be only one or two lines of code each.
 
@@ -91,8 +91,8 @@ let any_zeros lst =
 
 \problem[take drop]
 \begin{itemize}
-  \item Write a function \code{take : int -> 'a list -> 'a list} such that \code{take n lst} returns the first \code{n} elements of \code{lst}. If \code{lst} has fewer than \code{n} elements, return all of them.
-  \item Write a function \code{drop : int -> 'a list -> 'a list} such that \code{drop n lst} returns all but the first \code{n} elements of \code{lst}. If \code{lst} has fewer than \code{n} elements, return the empty list.
+	\item Write a function \code{take : int -> 'a list -> 'a list} such that \code{take n lst} returns the first \code{n} elements of \code{lst}. If \code{lst} has fewer than \code{n} elements, return all of them.
+	\item Write a function \code{drop : int -> 'a list -> 'a list} such that \code{drop n lst} returns all but the first \code{n} elements of \code{lst}. If \code{lst} has fewer than \code{n} elements, return the empty list.
 \end{itemize}
 
 \begin{lstlisting}[language=OCaml]
@@ -179,9 +179,9 @@ Assume the following type definition:
 \code{type student = \{first\_name : string; last\_name : string; gpa : float\}} \\
 Give OCaml expressions that have the following types:
 \begin{itemize}
-  \item \code{student}
-  \item \code{student -> string * string} (a function that extracts the student's name)
-  \item \code{string -> string -> float -> student} (a function that creates a student record)
+	\item \code{student}
+	\item \code{student -> string * string} (a function that extracts the student's name)
+	\item \code{string -> string -> float -> student} (a function that creates a student record)
 \end{itemize}
 
 \begin{lstlisting}[language=OCaml]
@@ -205,9 +205,9 @@ let make_stud first last g =
 Here is a variant that represents a few Pokémon types:
 \code{type poketype = Normal | Fire | Water}
 \begin{itemize}
-  \item Define the type \code{pokemon} to be a record with fields \code{name} (a string), \code{hp} (an integer), and \code{ptype} (a \code{poketype}).
-  \item Create a record named \code{charizard} of type \code{pokemon} that represents a Pokémon with 78 HP and Fire type.
-  \item Create a record named \code{squirtle} of type \code{pokemon} that represents a Pokémon with 44 HP and Water type.
+	\item Define the type \code{pokemon} to be a record with fields \code{name} (a string), \code{hp} (an integer), and \code{ptype} (a \code{poketype}).
+	\item Create a record named \code{charizard} of type \code{pokemon} that represents a Pokémon with 78 HP and Fire type.
+	\item Create a record named \code{squirtle} of type \code{pokemon} that represents a Pokémon with 44 HP and Water type.
 \end{itemize}
 
 \begin{lstlisting}[language=OCaml]
@@ -289,10 +289,10 @@ let none = lookup 4 dict
 
 \problem[cards]
 \begin{itemize}
-  \item Define a variant type \code{suit} that represents the four suits, \code{Clubs}, \code{Diamonds}, \code{Hearts}, and \code{Spades}, in a standard 52-card deck. All the constructors of your type should be constant.
-  \item Define a type \code{rank} that represents the possible ranks of a card: 2, 3, \ldots, 10, Jack, Queen, King, or Ace.
-  \item Define a type \code{card} that represents the suit and rank of a single card. Make it a record with two fields.
-  \item Define a few values of type card: the Ace of Clubs, the Queen of Hearts, the Two of Diamonds, the Seven of Spades.
+	\item Define a variant type \code{suit} that represents the four suits, \code{Clubs}, \code{Diamonds}, \code{Hearts}, and \code{Spades}, in a standard 52-card deck. All the constructors of your type should be constant.
+	\item Define a type \code{rank} that represents the possible ranks of a card: 2, 3, \ldots, 10, Jack, Queen, King, or Ace.
+	\item Define a type \code{card} that represents the suit and rank of a single card. Make it a record with two fields.
+	\item Define a few values of type card: the Ace of Clubs, the Queen of Hearts, the Two of Diamonds, the Seven of Spades.
 \end{itemize}
 
 \begin{lstlisting}[language=OCaml]

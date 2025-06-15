@@ -1,0 +1,126 @@
+% File: contents/chapter09.tex
+
+\section*{Chapter 9. Mutability}
+
+\problem[mutable fields]
+Define an OCaml record type to represent student names and GPAs. It should be possible to mutate the value of a student's
+GPA. Write an expression defining a student with name \code{"Alice"} and GPA 3.7. Then write an expression to mutate
+Alice's GPA to 4.0.
+
+\begin{lstlisting}[language=OCaml]
+type student = {name: string; mutable gpa: float}
+
+let alice = {name = "Alice"; gpa = 3.7}
+
+let () = alice.gpa <- 4.0
+\end{lstlisting}
+
+\problem[refs]
+Give OCaml expressions that have the following types. Use utop to check your answers.
+\begin{itemize}
+	\item \code{bool ref}
+	\item \code{int list ref}
+	\item \code{int ref list}
+\end{itemize}
+
+\begin{lstlisting}[language=OCaml]
+let (_ : bool ref) = ref true
+let (_ : int list ref) = ref [5;3]
+let (_ : int ref list) = [ref 5; ref 3]
+\end{lstlisting}
+
+\problem[inc fun]
+Define a reference to a function as follows:
+\begin{lstlisting}[language=OCaml]
+let inc = ref (fun x -> x + 1)
+\end{lstlisting}
+Write code that uses \code{inc} to produce the value 3110.
+
+\begin{lstlisting}[language=OCaml]
+let cs3110 =
+  let inc = ref (fun x -> x + 1) in
+  !inc 3109
+\end{lstlisting}
+
+\problem[addition assignment]
+The C language and many languages derived from it, such as Java, has an addition assignment operator written \code{a += b} and meaning \code{a = a + b}. Implement such an operator in OCaml; its type should be \code{int ref -> int -> unit}.
+
+\begin{lstlisting}[language=OCaml]
+let (+:=) x y = 
+	x := !x + y
+\end{lstlisting}
+
+\problem[norm]
+The Euclidean norm of an $n$-dimensional vector $x = (x_1, \ldots, x_n)$ is written $|x|$ and is defined to be $\sqrt{x_1^2 + \cdots + x_n^2}$.
+Write a function \code{norm : vector -> float} that computes the Euclidean norm of a vector, where \code{vector} is defined as follows:
+\begin{lstlisting}[language=OCaml]
+(* AF: the float array [| x1; ...; xn |] represents the
+ * vector (x1, ..., xn)
+ * RI: the array is non-empty *)
+type vector = float array
+\end{lstlisting}
+Your function should not mutate the input array. Hint: try to use \code{Array.map} and \code{Array.fold_left} or \code{Array.fold_right}.
+
+\begin{lstlisting}[language=OCaml]
+let norm v =
+	sqrt (Array.fold_left (fun acc x -> acc +. x ** 2.) 0. v)
+\end{lstlisting}
+
+\problem[normalize]
+Every vector $x$ can be normalized by dividing each component by $|x|$; this yields a vector with norm 1: $(\frac{x_1}{|x|}, \ldots, \frac{x_n}{|x|})$.
+Write a function \code{normalize : vector -> unit} that normalizes a vector "in place" by mutating the input array. Hint: \code{Array.iteri}.
+
+\begin{lstlisting}[language=OCaml]
+let normalize v =
+	let n = norm v in (* Must calculate norm before iteration *)
+	Array.iteri (fun i x -> v.(i) <- x /. n) v
+
+(* since OCaml 5.1 *)
+let normalize' (v : vector) =
+	let n = norm v in
+	Array.map_inplace (fun x -> x /. n) v
+\end{lstlisting}
+
+\problem[norm loop]
+Modify your implementation of \code{norm} to use a loop.
+
+\begin{lstlisting}[language=OCaml]
+let norm_loop v =
+	let n = ref 0.0 in
+	for i = 0 to Array.length v - 1 do
+		n := !n +. (v.(i) ** 2.)
+	done;
+	sqrt !n
+\end{lstlisting}
+
+\problem[normalize loop]
+Modify your implementation of \code{normalize} to use a loop.
+
+\begin{lstlisting}[language=OCaml]
+let normalize_loop v =
+	let n = norm v in
+	for i = 0 to Array.length v - 1 do
+		v.(i) <- v.(i) /. n
+	done
+\end{lstlisting}
+
+\problem[fact loop]
+Modify your implementation of \code{fact} to use a loop.
+
+\begin{lstlisting}[language=OCaml]
+let fact_loop n =
+	let ans = ref 1 in
+	for i = 1 to n do
+		ans := !ans * i
+	done;
+	!ans
+\end{lstlisting}
+
+\problem[init matrix]
+The \code{Array} module contains two functions for creating an array: \code{make} and \code{init}. \code{make} creates an array and fills it with a default value, while \code{init} creates an array and uses a provided function to fill it in. The library also contains a function \code{make_matrix} for creating a two-dimensional array, but it does not contain an analogous \code{init_matrix} to create a matrix using a function for initialization.
+Write a function \code{init_matrix : int -> int -> (int -> int -> 'a) -> 'a array array} such that \code{init_matrix n o f} creates and returns an \code{n} by \code{o} matrix \code{m} with \code{m.(i).(j) = f i j} for all \code{i} and \code{j} in bounds.
+
+\begin{lstlisting}[language=OCaml]
+let init_matrix n o f =
+	Array.init n (fun i -> Array.init o (fun j -> f i j))
+\end{lstlisting}
