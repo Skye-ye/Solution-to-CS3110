@@ -1,0 +1,451 @@
+\section*{Chapter 7. Modular Programming}
+\addcontentsline{toc}{section}{Chapter 7. Modular Programming}
+
+\problem[complex synonym]
+Here is a module type for complex numbers, which have a real and imaginary component:
+\begin{lstlisting}[language=OCaml]
+module type ComplexSig = sig
+  val zero : float * float
+  val add : float * float -> float * float -> float * float
+end
+\end{lstlisting}
+Improve that code by adding \code{type t = float * float}. Show how the signature can be written more tersely because of the type synonym.
+
+\begin{lstlisting}[language=OCaml]
+module type ComplexSig = sig
+  type t = float * float
+  val zero : t
+  val add : t -> t -> t
+end
+\end{lstlisting}
+
+\problem[big list queue]
+Use the following code to create \code{ListQueue} of exponentially increasing length: 10, 100, 1000, etc. How big of a queue can you create before there is a noticeable delay? How big until there's a delay of at least 10 seconds? (Note: you can abort utop computations with Ctrl-C.)
+\begin{lstlisting}[language=OCaml]
+(** Creates a ListQueue filled with [n] elements. *)
+let fill_listqueue n =
+  let rec loop n q =
+    if n = 0 then q
+    else loop (n - 1) (ListQueue.enqueue n q)
+  in loop n ListQueue.empty
+\end{lstlisting}
+
+\begin{lstlisting}[language=OCaml]
+module ListQueue = struct
+  type 'a queue = 'a list
+
+  let empty = []
+
+  let is_empty q = (q = [])
+
+  let enqueue x q = q @ [x]
+
+  let peek = function
+    | []   -> failwith "Empty"
+    | x::_ -> x
+
+  let dequeue = function
+    | []   -> failwith "Empty"
+    | _::q -> q
+end
+\end{lstlisting}
+
+\problem[big batched queue]
+Use the following function to create \code{BatchedQueue} of exponentially increasing length:
+\begin{lstlisting}[language=OCaml]
+let fill_batchedqueue n =
+  let rec loop n q =
+    if n = 0 then q
+    else loop (n - 1) (BatchedQueue.enqueue n q)
+  in loop n BatchedQueue.empty
+\end{lstlisting}
+Now how big of a queue can you create before there's a delay of at least 10 seconds?
+
+\begin{lstlisting}[language=OCaml]
+module BatchedQueue = struct
+  type 'a t = {outbox:'a list; inbox:'a list}
+
+  let empty = {outbox=[]; inbox=[]}
+
+  let is_empty = function
+    | {outbox=[]; inbox=[]} -> true
+    | _ -> false
+
+  let norm = function
+    | {outbox=[]; inbox} -> {outbox=List.rev inbox; inbox=[]}
+    | q -> q
+
+  let enqueue x q = norm {q with inbox=x::q.inbox}
+
+  let peek = function
+    | {outbox=[]; _} -> None
+    | {outbox=x::_; _} -> Some x
+
+  let dequeue = function
+    | {outbox=[]; _} -> None
+    | {outbox=_::xs; inbox} -> Some (norm {outbox=xs; inbox})
+end
+\end{lstlisting}
+
+\problem[binary search tree map]
+Write a module \code{BstMap} that implements the \code{Map} module type using a binary search tree type. Binary trees were covered earlier when we discussed algebraic data types. A binary search tree (BST) is a binary tree that obeys the following BST Invariant:
+For any node \code{n}, every node in the left subtree of \code{n} has a value less than \code{n}'s value, and every node in the right subtree of \code{n} has a value greater than \code{n}'s value.
+Your nodes should store pairs of keys and values. The keys should be ordered by the BST Invariant. Based on that invariant, you will always know whether to look left or right in a tree to find a particular key.
+
+\begin{lstlisting}[language=OCaml]
+module type Map = sig
+  type ('k, 'v) t
+  val empty  : ('k, 'v) t
+  val insert : 'k -> 'v -> ('k,'v) t -> ('k,'v) t
+  val lookup  : 'k -> ('k,'v) t -> 'v
+end
+
+module BstMap : Map = struct
+  type 'a tree =
+    | Leaf
+    | Node of 'a * 'a tree * 'a tree
+
+  type ('k, 'v) t = ('k * 'v) tree
+
+  let empty =
+    Leaf
+
+  let rec insert k v = function
+    | Leaf -> Node((k, v), Leaf, Leaf)
+    | Node ((k',v'), l, r) ->
+      if (k = k') then Node ((k, v), l, r)
+      else if (k < k') then Node ((k',v'), insert k v l, r)
+      else Node ((k',v'), l, insert k v r)
+
+  let rec lookup k = function
+    | Leaf -> failwith "Not_found"
+    | Node ((k',v'), l, r) ->
+      if (k = k') then v'
+      else if (k < k') then lookup k l
+      else lookup k r
+end
+\end{lstlisting}
+
+\problem[fraction]
+Write a module that implements the \code{Fraction} module type below:
+\begin{lstlisting}[language=OCaml]
+module type Fraction = sig
+  (* A fraction is a rational number p/q, where q != 0. *)
+  type t
+
+  (** [make n d] represents n/d, a fraction with
+      numerator [n] and denominator [d].
+      Requires d <> 0. *)
+  val make : int -> int -> t
+  val numerator : t -> int
+  val denominator : t -> int
+  val to_string : t -> string
+  val to_float : t -> float
+  val add : t -> t -> t
+  val mul : t -> t -> t
+end
+\end{lstlisting}
+
+\begin{lstlisting}[language=OCaml]
+module PairFraction : Fraction = struct
+  type t = {
+    num : int;
+    den : int;
+  }
+
+  exception Division_by_zero
+
+  let rec gcd x y = if y = 0 then x else gcd y (x mod y)
+
+  let make num den =
+    if den = 0 then raise Division_by_zero
+    else
+      let g = gcd (abs num) (abs den) in
+      let sign = if den < 0 then -1 else 1 in
+      {num = sign * num / g; den = abs (den / g)}
+
+  let numerator {num; _} = num
+  let denominator {den; _} = den
+  let to_string {num; den} = string_of_int num ^ "/" ^ string_of_int den
+  let to_float {num; den} = float_of_int num /. float_of_int den
+
+  let add {num = num1; den = den1} {num = num2; den = den2} =
+    make ((num1 * den2) + (num2 * den1)) (den1 * den2)
+
+  let mul {num = num1; den = den1} {num = num2; den = den2} =
+    make (num1 * num2) (den1 * den2)
+end
+\end{lstlisting}
+
+\problem[use char map]
+Using the \code{CharMap} you just made, create a map that contains the following bindings:
+\begin{itemize}
+  \item \code{'A'} maps to \code{"Alpha"}
+  \item \code{'E'} maps to \code{"Echo"}
+  \item \code{'S'} maps to \code{"Sierra"}
+  \item \code{'V'} maps to \code{"Victor"}
+\end{itemize}
+Use \code{CharMap.find} to find the binding for \code{'E'}.
+Now remove the binding for \code{'A'}. Use \code{CharMap.mem} to find whether \code{'A'} is still bound.
+Use the function \code{CharMap.bindings} to convert your map into an association list.
+
+\begin{lstlisting}[language=OCaml]
+module CharMap = Map.Make(Char)
+let map = CharMap.(
+    empty
+    |> add 'A' "Alpha"
+    |> add 'E' "Echo"
+    |> add 'S' "Sierra"
+    |> add 'V' "Victor"
+  )
+let echo = CharMap.find 'E' map (* "Echo" *)
+let map' = CharMap.remove 'A' map
+let a_exists = CharMap.mem 'A' map' (* false *)
+let bindings = CharMap.bindings map'
+\end{lstlisting}
+
+\problem[date order]
+Here is a type for dates:
+\begin{lstlisting}[language=OCaml]
+type date = {month : int; day : int}
+\end{lstlisting}
+For example, March 31st would be represented as \code{\{month = 3; day = 31\}}. Our goal in the next few exercises is to implement a map whose keys have type \code{date}.
+Obviously it's possible to represent invalid dates with type \code{date}---for example, \code{\{ month=6; day=50 \}} would be June 50th, which is not a real date. The behavior of your code in the exercises below is unspecified for invalid dates.
+To create a map over dates, we need a module that we can pass as input to \code{Map.Make}. That module will need to match the \code{Map.OrderedType} signature. Create such a module. Here is some code to get you started:
+\begin{lstlisting}[language=OCaml]
+module Date = struct
+  type t = date
+  let compare ...
+end
+\end{lstlisting}
+Recall the specification of \code{compare} in \code{Map.OrderedType} as you write your \code{Date.compare} function.
+
+\begin{lstlisting}[language=OCaml]
+type date = {
+  month : int;
+  day : int
+}
+
+module Date = struct
+  type t = date
+
+  let compare d1 d2 =
+    if d1.month = d2.month then d1.day - d2.day
+    else d1.month - d2.month
+end
+\end{lstlisting}
+
+\problem[calendar]
+Use the \code{Map.Make} functor with your \code{Date} module to create a \code{DateMap} module. Then define a calendar type as follows:
+\begin{lstlisting}[language=OCaml]
+type calendar = string DateMap.t
+\end{lstlisting}
+The idea is that \code{calendar} maps a date to the name of an event occurring on that date.
+Using the functions in the \code{DateMap} module, create a calendar with a few entries in it, such as birthdays or anniversaries.
+
+\begin{lstlisting}[language=OCaml]
+module DateMap = Map.Make (Date)
+
+type calender = string DateMap.t
+
+let my_calendar =
+  DateMap.(
+    empty
+    |> add {month = 2; day = 7} "e day"
+    |> add {month = 3; day = 14} "pi day"
+    |> add {month = 6; day = 18} "phi day"
+    |> add {month = 10; day = 23} "mole day"
+    |> add {month = 11; day = 23} "fibonacci day")
+\end{lstlisting}
+
+\problem[print calendar]
+Write a function \code{print_calendar : calendar -> unit} that prints each entry in a calendar in a format similar to the inspiring examples in the previous exercise. Hint: use \code{DateMap.iter}, which is documented in the \code{Map.S} signature.
+
+\begin{lstlisting}[language=OCaml]
+let print_calendar =
+  DateMap.iter (fun date event ->
+      Printf.printf "%d/%d: %s\n" date.month date.day event)
+\end{lstlisting}
+
+\problem[is for]
+Write a function \code{is_for : string CharMap.t -> string CharMap.t} that given an input map with bindings from $k_1$ to $v_1$, ..., $k_n$ to $v_n$, produces an output map with the same keys, but where each key $k_i$ is now bound to the string ``$k_i$ is for $v_i$''. For example, if \code{m} maps \code{'a'} to \code{"apple"}, then \code{is_for m} would map \code{'a'} to \code{"a is for apple"}. Hint: there is a one-line solution that uses a function from the \code{Map.S} signature. To convert a character to a string, you could use \code{String.make}. An even fancier way would be to use \code{Printf.sprintf}.
+
+\begin{lstlisting}[language=OCaml]
+let is_for m =
+  CharMap.mapi (fun key v -> Printf.sprintf "%c is for %s" key v) m
+\end{lstlisting}
+
+\problem[first after]
+Write a function \code{first_after : calendar -> Date.t -> string} that returns the name of the first event that occurs strictly after the given date. If there is no such event, the function should raise \code{Not_found}, which is an exception already defined in the standard library. Hint: you can do this in one-line by using a function or two from the \code{Map.S} signature.
+
+\begin{lstlisting}[language=OCaml]
+let first_after date calendar =
+  DateMap.(
+    split date calendar |> fun (_, _, after) ->
+    after |> DateMap.min_binding |> snd)
+\end{lstlisting}
+
+\problem[sets]
+The standard library \code{Set} module is quite similar to the \code{Map} module. Use it to create a module that represents sets of case-insensitive strings. Strings that differ only in their case should be considered equal by the set. For example, the sets \code{{"grr", "argh"}} and \code{{"aRgh", "GRR"}} should be considered the same, and adding \code{"gRr"} to either set should not change the set.
+
+\problem[ToString]
+Write a module type \code{ToString} that specifies a signature with an abstract type \code{t} and a function \code{to_string : t -> string}.
+
+\begin{lstlisting}[language=OCaml]
+module type ToString = sig
+  type t
+  val to_string: t -> string
+end
+\end{lstlisting}
+
+\problem[Print]
+Write a functor \code{Print} that takes as input a module named \code{M} of type \code{ToString}. The module returned by your functor should have exactly one value in it, \code{print}, which is a function that takes a value of type \code{M.t} and prints a string representation of that value.
+
+\begin{lstlisting}[language=OCaml]
+module Print (M : ToString) = struct
+  let print v = print_string (M.to_string v)
+end
+\end{lstlisting}
+
+\problem[Print Int]
+Create a module named \code{PrintInt} that is the result of applying the functor \code{Print} to a new module \code{Int}. You will need to write \code{Int} yourself. The type \code{Int.t} should be \code{int}. Hint: do not seal \code{Int}.
+Experiment with \code{PrintInt} in utop. Use it to print the value of an integer.
+
+\begin{lstlisting}[language=OCaml]
+module Int = struct
+  type t = int
+
+  let to_string = string_of_int
+end
+\end{lstlisting}
+
+\problem[Print String]
+Create a module named \code{PrintString} that is the result of applying the functor \code{Print} to a new module \code{MyString}. You will need to write \code{MyString} yourself. Hint: do not seal \code{MyString}.
+Experiment with \code{PrintString} in utop. Use it to print the value of a string.
+
+\begin{lstlisting}[language=OCaml]
+module MyString = struct
+  type t = string
+
+  let to_string s = s
+end
+\end{lstlisting}
+
+\problem[Print String reuse revisited]
+The \code{PrintString} module you created above supports just one operation: \code{print}. It would be great to have a module that supports all the \code{String} module functions in addition to that \code{print} operation, and it would be super great to derive such a module without having to copy any code.
+Define a module \code{StringWithPrint}. It should have all the values of the built-in \code{String} module. It should also have the \code{print} operation, which should be derived from the \code{Print} functor rather than being copied code. Hint: use two \code{include} statements.
+
+\begin{lstlisting}[language=OCaml]
+module StringWithPrint = struct
+  include String
+  include Print(MyString)
+end
+\end{lstlisting}
+
+\problem[date]
+\begin{lstlisting}[language=OCaml]
+(* date.mli *)
+type date
+val make_date : int -> int -> date
+val get_month : date -> int
+val get_day : date -> int
+val to_string : date -> string
+val format : Format.formatter -> date -> unit
+
+(* date.ml *)
+type date = {
+  month : int;
+  day : int;
+}
+
+let make_date month day = {month; day}
+let get_month d = d.month
+let get_day d = d.day
+let to_string d = string_of_int d.month ^ "/" ^ string_of_int d.day
+
+let format fmt d = Format.fprintf fmt "%s" (to_string d)
+\end{lstlisting}
+
+\problem[refactor arith]
+Download this file: \code{algebra.ml}. It contains these signatures and structures:
+\begin{itemize}
+  \item \code{Ring} is a signature that describes the algebraic structure called a ring, which is an abstraction of the addition and multiplication operators.
+  \item \code{Field} is a signature that describes the algebraic structure called a field, which is like a ring but also has an abstraction of the division operation.
+  \item \code{IntRing} and \code{FloatRing} are structures that implement rings in terms of \code{int} and \code{float}.
+  \item \code{IntField} and \code{FloatField} are structures that implement fields in terms of \code{int} and \code{float}.
+  \item \code{IntRational} and \code{FloatRational} are structures that implement fields in terms of ratios (aka fractions)\\---that is, pairs of \code{int} and pairs of \code{float}.
+\end{itemize}
+
+\begin{quote}
+  Note: Dear fans of abstract algebra: of course these representations don't necessarily obey all the axioms of rings and fields because of the limitations of machine arithmetic. Also, the division operation in \code{IntField} is ill-defined on zero. Try not to worry about that.
+\end{quote}
+Refactor the code to improve the amount of code reuse it exhibits. To do that, use \code{include}, functors, and introduce additional structures and signatures as needed. There isn't necessarily a right answer here, but here's some advice:
+\begin{itemize}
+  \item No name should be directly declared in more than one signature. For example, \code{( + )} should not be directly declared in \code{Field}; it should be reused from an earlier signature. By ``directly declared'' we mean a declaration of the form \code{val name : ...}. An indirect declaration would be one that results from an \code{include}.
+  \item You need only three direct definitions of the algebraic operations and numbers (plus, minus, times, divide, zero, one): once for \code{int}, once for \code{float}, and once for ratios. For example, \code{IntField.( + )} should not be directly defined as \code{Stdlib.( + )}; rather, it should be reused from elsewhere. By ``directly defined'' we mean a definition of the form \code{let name = ...}. An indirect definition would be one that results from an \code{include} or a functor application.
+  \item The rational structures can both be produced by a single functor that is applied once to \code{IntRing} and once to \code{FloatRing}.
+  \item It's possible to eliminate all duplication of \code{of_int}, such that it is directly defined exactly once, and all structures reuse that definition; and such that it is directly declared in only one signature. This will require the use of functors. It will also require inventing an algorithm that can convert an integer to an arbitrary \code{Ring} representation, regardless of what the representation type of that \code{Ring} is.
+\end{itemize}
+When you're done, the types of all the modules should remain unchanged. You can easily see those types by running \code{ocamlc -i algebra.ml}.
+
+\begin{lstlisting}[language=OCaml]
+module type PreRing = sig
+  type t
+  val zero  : t
+  val one   : t
+  val (+)   : t -> t -> t
+  val (~-)  : t -> t
+  val ( * ) : t -> t -> t
+  val to_string : t -> string
+end
+
+module type OfInt = sig
+  type t
+  val of_int : int -> t
+end
+
+module type Ring = sig
+  include PreRing
+  include OfInt with type t := t
+end
+
+module type PreField = sig
+  include PreRing
+  val (/) : t -> t -> t
+end
+
+module type Field = sig
+  include PreField
+  include OfInt with type t := t
+end
+
+module RingOfPreRing (R:PreRing) = (struct
+  include R
+  let of_int n =
+    let two = one + one in
+    (* [loop n b x] is [nb + x] *)
+    let rec loop n b x =
+      if n=0 then x
+      else loop Stdlib.(n/2) (b*two)
+          (if n mod 2 = 0 then x else x+b)
+    in
+    let m = loop (abs n) one zero in
+    if n<0 then -m else m
+end : Ring with type t = R.t)
+
+module FieldOfPreField (F:PreField) = (struct
+  module R : (OfInt with type t := F.t) = RingOfPreRing(F)
+  include F
+  include R
+end : Field)
+
+module IntPreRing = struct
+  type t = int
+  let zero = 0
+  let one = 1
+  let (+) = (+)
+  let (~-) = (~-)
+  let ( * ) = ( * )
+  let to_string = string_of_int
+end
+\end{lstlisting}

@@ -204,7 +204,7 @@ let is_valid_matrix = function
 \end{lstlisting}
 
 \problem[row vector add]
-Implement a function \code{add_row_vectors: int list -> int list -> int list} for the element-wise addition of two row vectors. For example, the addition of \code{[1; 1; 1]} and \code{[9; 8; 7]} is \code{[10; 9; 8]}. If the two vectors do not have the same number of entries, the behavior of your function is unspecified--that is, it may do whatever you like. Hint: there is an elegant one-line solution using \code{List.map2}.
+Implement a function \code{add_row_vectors: int list -> int list -> int list} for the element-wise addition of two row vectors. For example, the addition of \code{[1; 1; 1]} and \code{[9; 8; 7]} is \code{[10; 9; 8]}. If the two vectors do not have the same number of entries, the behavior of your function is unspecified---that is, it may do whatever you like. Hint: there is an elegant one-line solution using \code{List.map2}.
 
 \begin{lstlisting}[language=OCaml]
 let add_row_vectors v1 v2 = List.map2 ( + ) v1 v2
