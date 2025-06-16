@@ -288,6 +288,16 @@ let first_after date calendar =
 \problem[sets]
 The standard library \code{Set} module is quite similar to the \code{Map} module. Use it to create a module that represents sets of case-insensitive strings. Strings that differ only in their case should be considered equal by the set. For example, the sets \code{{"grr", "argh"}} and \code{{"aRgh", "GRR"}} should be considered the same, and adding \code{"gRr"} to either set should not change the set.
 
+\begin{lstlisting}[language=OCaml]
+module CisSet = Set.Make(struct
+    type t = string
+    let compare s1 s2 =
+      String.compare (String.lowercase_ascii s1) (String.lowercase_ascii s2)
+  end)
+
+let _ = CisSet.(equal (of_list ["grr"; "argh"]) (of_list ["GRR"; "aRgh"]))
+\end{lstlisting}
+
 \problem[ToString]
 Write a module type \code{ToString} that specifies a signature with an abstract type \code{t} and a function \code{to_string : t -> string}.
 
