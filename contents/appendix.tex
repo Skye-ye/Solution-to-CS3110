@@ -1,7 +1,7 @@
 \section*{Appendix. More OCaml}
 \addcontentsline{toc}{section}{Appendix. More OCaml}
 
-\problem[Acronym]
+\problem[Acronym (easy)]
 Convert a phrase to its acronym.
 Techies love their TLA (Three Letter Acronyms)!
 Help generate some jargon by writing a program that converts a long name like Portable Network Graphics to its acronym (PNG).
@@ -21,7 +21,7 @@ let acronym (phrase : string) : string =
   |> String.uppercase
 \end{lstlisting}
 
-\problem[Allergies]
+\problem[Allergies (easy)]
 Given a person's allergy score, determine whether or not they're allergic to a given item, and their full list of allergies.
 An allergy test produces a single numeric score which contains the information about all the allergies the person has (that they were tested for).
 The list of items (and their value) that were tested are:
@@ -62,7 +62,7 @@ let allergies n =
     if (n land score) <> 0 then Some allergen else None)
 \end{lstlisting}
 
-\problem[Anagram]
+\problem[Anagram (easy)]
 Given a target word and one or more candidate words, your task is to find the candidates that are anagrams of the target.
 An anagram is a rearrangement of letters to form a new word: for example \code{"owns"} is an anagram of \code{"snow"}.
 A word is \B{not} its own anagram: for example, \code{"stop"} is not an anagram of \code{"stop"}.
@@ -92,7 +92,7 @@ let anagrams target candidates =
   ) candidates
 \end{lstlisting}
 
-\problem[Binary Search Tree]
+\problem[Binary Search Tree (easy)]
 Implement a binary search tree.
 
 \begin{lstlisting}[language=OCaml]
@@ -122,7 +122,7 @@ let rec to_list = function
   | Node (v, l, r) -> to_list l @ [v] @ to_list r
 \end{lstlisting}
 
-\problem[Bob]
+\problem[Bob (easy)]
 Your task is to determine what Bob will reply to someone when they say something to him or ask him a question.
 Bob only ever answers one of five things:
 
@@ -174,7 +174,7 @@ let response_for phrase =
     "Whatever."
 \end{lstlisting}
 
-\problem[Difference of Squares]
+\problem[Difference of Squares (easy)]
 Find the difference between the square of the sum and the sum of the squares of the first N natural numbers.
 
 \begin{lstlisting}[language=OCaml]
@@ -189,7 +189,7 @@ let difference_of_squares n =
     abs (square_of_sum n - sum_of_squares n)
 \end{lstlisting}
 
-\problem[Eliud's Eggs]
+\problem[Eliud's Eggs (easy)]
 Your friend Eliud inherited a farm from her grandma Tigist.
 Her granny was an inventor and had a tendency to build things in an overly complicated manner.
 The chicken coop has a digital display showing an encoded number representing the positions of all eggs that could be picked up.
@@ -211,7 +211,7 @@ let egg_count number =
   egg_count_helper number 0
 \end{lstlisting}
 
-\problem[ETL]
+\problem[ETL (easy)]
 Your task is to change the data format of letters and their point values in the game.
 Currently, letters are stored in groups based on their score, in a one-to-many mapping.
 \begin{itemize}
@@ -247,7 +247,7 @@ let transform (legacy_data: (int * char list) list) : (char * int) list =
   ) flat_list
 \end{lstlisting}
 
-\problem[Grade School]
+\problem[Grade School (easy)]
 Given students' names along with the grade they are in, create a roster for the school.
 In the end, you should be able to:
 \begin{itemize}
@@ -298,7 +298,7 @@ let roster school =
   List.concat (Map.data school)
 \end{lstlisting}
 
-\problem[Hamming]
+\problem[Hamming (easy)]
 Calculate the Hamming distance between two DNA strands.
 We read DNA using the letters C, A, G and T.
 Two strands might look like this:
@@ -327,7 +327,7 @@ let hamming_distance (seq1: nucleotide list) (seq2: nucleotide list) =
   hamming_distance_helper seq1 seq2 0
 \end{lstlisting}
 
-\problem[Isogram]
+\problem[Isogram (easy)]
 Determine if a word or phrase is an isogram.
 An isogram (also known as a ``non-pattern word'') is a word or phrase without a repeating letter, however spaces and hyphens are allowed to appear multiple times.
 Examples of isograms:
@@ -357,7 +357,7 @@ let is_isogram word =
     is_isogram_helper (Set.empty (module Char)) chars
 \end{lstlisting}
 
-\problem[Leap]
+\problem[Leap (easy)]
 Determine whether a given year is a leap year.
 
 \begin{lstlisting}[language=OCaml]
@@ -374,7 +374,7 @@ let leap_year year =
         false
 \end{lstlisting}
 
-\problem[nucleotide Count]
+\problem[nucleotide Count (easy)]
 Given a string representing a DNA sequence, count how many of each nucleotide is present.
 If the string contains characters that aren't A, C, G, or T then it is invalid and you should signal an error.
 For example:
@@ -414,7 +414,7 @@ let count_nucleotides s =
   count_nucleotides_helper (String.to_list s) empty
 \end{lstlisting}
 
-\problem[Pangram]
+\problem[Pangram (easy)]
 Your task is to figure out if a sentence is a pangram.
 A pangram is a sentence using every letter of the alphabet at least once.
 It is case insensitive, so it doesn't matter if a letter is lower-case (e.g. \code{k}) or upper-case (e.g. \code{K}).
@@ -433,7 +433,7 @@ let is_pangram sentence =
   |> (=) 26
 \end{lstlisting}
 
-\problem[Raindrops]
+\problem[Raindrops (easy)]
 Your task is to convert a number into its corresponding raindrop sounds.
 If a given number:
 
@@ -454,7 +454,7 @@ let raindrop n =
 	!res
 \end{lstlisting}
 
-\problem[Reverse String]
+\problem[Reverse String (easy)]
 Reverse a given string.
 
 \begin{lstlisting}[language=OCaml]
@@ -466,7 +466,7 @@ let reverse_string s =
   |> String.of_char_list
 \end{lstlisting}
 
-\problem[RNA Transcription]
+\problem[RNA Transcription (easy)]
 Determine the RNA complement of a given DNA sequence.
 
 \begin{lstlisting}[language=OCaml]
@@ -482,7 +482,7 @@ let to_rna seq =
   ) seq
 \end{lstlisting}
 
-\problem[Sieve]
+\problem[Sieve (easy)]
 Your task is to create a program that implements the Sieve of Eratosthenes algorithm to find all prime numbers less than or equal to a given number.
 
 \begin{lstlisting}[language=OCaml]
@@ -510,7 +510,7 @@ let primes limit =
     !result
 \end{lstlisting}
 
-\problem[Space Age]
+\problem[Space Age (easy)]
 Given an age in seconds, calculate how old someone would be on a planet in our Solar System.
 One Earth year equals 365.25 Earth days, or 31,557,600 seconds.
 If you were told someone was 1,000,000,000 seconds old, their age would be 31.69 Earth-years.
@@ -556,7 +556,7 @@ let age_on (p : planet) (seconds : int) : float =
 
 \end{lstlisting}
 
-\problem[Triangle]
+\problem[Triangle (easy)]
 Determine if a triangle is equilateral, isosceles, or scalene.
 
 \begin{itemize}

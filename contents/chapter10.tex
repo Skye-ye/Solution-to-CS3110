@@ -1,0 +1,1046 @@
+\section*{Chapter 10. Data Structures}
+\addcontentsline{toc}{section}{Chapter 10. Data Structures}
+
+\problem[hashtbl usage]
+Create a hash table tab with \code{Hashtbl.create} whose initial size is 16. Add 31 bindings to it with \code{Hashtbl.add}.
+For example, you could add the numbers 1..31 as keys and the strings ``1''..``31'' as their values. Use \code{Hashtbl.find}
+to look for keys that are in tab, as well as keys that are not.
+
+\begin{lstlisting}[language=OCaml]
+let ( -- ) i j =
+  let rec from i j l =
+    if i > j then l
+    else from i (j - 1) (j :: l)
+  in
+  from i j []
+
+let tab = Hashtbl.create 16
+
+let ints = List.map (fun x -> (x, string_of_int x)) (1 -- 31)
+
+let () = List.iter (fun (k, v) -> Hashtbl.add tab k v) ints
+
+let () = assert (Hashtbl.find tab 1 = "1")
+let () = assert ((try Hashtbl.find tab 0 with Not_found -> "") = "")   
+\end{lstlisting}
+
+\problem[hashtbl stats]
+Use the \code{Hashtbl.stats} function to find out the statistics of \code{tab} (from an exercise above). How many buckets are
+in the table? How many buckets have a single binding in them?
+
+\begin{lstlisting}[language=OCaml]
+let buckets h =
+  (Hashtbl.stats h).num_buckets
+
+let () = assert (buckets tab = 16)
+
+let single_binding h =
+  (Hashtbl.stats h).bucket_histogram.(1)
+
+let () = assert (single_binding tab = 3)
+\end{lstlisting}
+
+\problem[hashtbl bindings]
+Define a function \code{bindings : ('a, 'b) Hashtbl.t -> ('a * 'b) list}, such that \code{bindings} h returns
+a list of all bindings in \code{h}. Use your function to see all the bindings in \code{tab} (from an exercise above). Hint: fold.
+
+\begin{lstlisting}[language=OCaml]
+let bindings h =
+  Hashtbl.fold (fun k v acc -> (k, v) :: acc) h []
+\end{lstlisting}
+
+\problem[hashtbl load factor]
+Define a function \code{load\_factor : ('a,'b) Hashtbl.t -> float}, such that \code{load\_factor h} is the load
+factor of \code{h}. What is the load factor of \code{tab}? Hint: stats.
+Add one more binding to \code{tab}. Do the stats or load factor change? Now add yet another binding. Now do the stats or
+load factor change? Hint: \code{Hashtbl} resizes when the load factor goes strictly above 2.
+
+\begin{lstlisting}[language=OCaml]
+let (/..) x y =
+ float_of_int x /. float_of_int y
+
+let load_factor h =
+ let stats = Hashtbl.stats h in
+ stats.num_bindings /.. stats.num_buckets
+
+let epsilon = 0.1
+
+let close_to x y =
+ abs_float (x -. y) <= epsilon
+
+let () = Hashtbl.add tab 0 "0"; assert (not (close_to (load_factor tab) 1.0))
+let () = Hashtbl.add tab ~-1 "-1"; assert (close_to (load_factor tab) 1.0)
+\end{lstlisting}
+
+\problem[functorial interface]
+Use the functorial interface (i.e., \code{Hashtbl.Make}) to create a hash table whose keys are strings that are case-insensitive.
+Be careful to obey the specification of \code{Hashtbl.HashedType.hash}:
+\begin{quote}
+  If two keys are equal according to \code{equal}, then they have identical hash values as computed by \code{hash}.
+\end{quote}
+
+\begin{lstlisting}[language=OCaml]
+module CaseInsensitiveHashtbl =
+  Hashtbl.Make (struct
+    type t = string
+
+    let equal s1 s2 =
+      String.lowercase_ascii s1 = String.lowercase_ascii s2
+
+    let hash s =
+      Hashtbl.hash (String.lowercase_ascii s)
+  end)   
+\end{lstlisting}
+
+\problem[bad hash]
+Use the functorial interface to create a hash table with a really bad hash function (e.g., a constant function). Use the
+\code{stats} function to see how bad the bucket distribution becomes.
+
+\begin{lstlisting}[language=OCaml]
+module BadHashtbl =
+  Hashtbl.Make (struct
+    type t = int
+    let equal = (=)
+    let hash _ = 0
+  end)
+
+let bad = BadHashtbl.create 16
+
+let () =
+  1--100
+  |> List.map (fun x -> x, string_of_int x)
+  |> List.iter (fun (k,v) -> BadHashtbl.add bad k v)
+
+(* there is now one bucket that has 100 bindings *)
+let () = assert ((BadHashtbl.stats bad).bucket_histogram.(100) = 1)
+\end{lstlisting}
+
+\problem[linear probing]
+We briefly mentioned \textit{probing} as an alternative to chaining. Probing can be effectively used in hardware implementations
+of hash tables, as well as in databases. With probing, every bucket contains exactly one binding. In case of a collision,
+we search forward through the array, as described below.
+
+\B{Your task:} Implement a hash table that uses linear probing. The details are below.
+
+\B{Find.} Suppose we are trying to find a binding in the table. We hash the binding's key and look in the appropriate bucket.
+If there is already a different key in that bucket, we start searching forward through the array at the next bucket, then the
+next bucket, and so forth, wrapping back around to the beginning of the array if necessary. Eventually we will either
+\begin{itemize}
+  \item find an empty bucket, in which case the key we're searching for is not bound in the table;
+  \item find the key before we reach an empty bucket, in which case we can return the value; or
+  \item never find the key or an empty bucket, instead wrapping back around to the original bucket, in which case all
+        buckets are full and the key is not bound in the table. This case actually should never occur, because we won't allow
+        the load factor to get high enough for all buckets to be filled.
+\end{itemize}
+
+\B{Insert.} Insertion follows the same algorithm as finding a key, except that whenever we first find an empty bucket, we can
+insert the binding there.
+
+\B{Remove.} Removal is more difficult. Once the key is found, we can't just make the bucket empty, because that would
+affect future searches by causing them to stop early. Instead, we can introduce a special ``deleted'' value into that bucket
+to indicate that the bucket does not contain a binding but the searches should not stop at it.
+
+\B{Resizing.} Since we never want the array to become completely full, we can keep the load factor near $1/4$. When the load
+factor exceeds $1/2$, we can double the array, bringing the load factor back to $1/4$. When the load factor goes below $1/8$,
+we can half the array, again bringing the load factor back to $1/4$. ``Deleted'' bindings complicate the definition of load
+factor:
+\begin{itemize}
+  \item When determining whether to double the table size, we calculate the load factor as (number of bindings + number of deleted
+        bindings) / (number of buckets). That is, deleted bindings contribute toward increasing the load factor.
+  \item When determining whether the half the table size, we calculate the load factor as (number of bindings) / (number of buckets). That
+        is, deleted bindings do not count toward increasing the load factor.
+\end{itemize}
+When rehashing the table, deleted bindings are of course not re-inserted into the new table.
+
+\begin{lstlisting}[language=OCaml]
+module type TableMap = sig
+  type ('k, 'v) t
+
+  val insert : 'k -> 'v -> ('k, 'v) t -> unit
+  val find : 'k -> ('k, 'v) t -> 'v option
+  val remove : 'k -> ('k, 'v) t -> unit
+  val create : ('k -> int) -> int -> ('k, 'v) t
+  val bindings : ('k, 'v) t -> ('k * 'v) list
+  val of_list : ('k -> int) -> ('k * 'v) list -> ('k, 'v) t
+end
+
+module LinearProbingHashMap : TableMap = struct
+  type ('k, 'v) content =
+    | Empty
+    | Deleted
+    | Full of 'k * 'v
+
+  type ('k, 'v) t = {
+    hash : 'k -> int;
+    mutable size : int;
+    mutable buckets : ('k, 'v) content array;
+  }
+
+  let expand_factor = 0.5
+  let shrink_factor = 0.125
+  let capacity {buckets} = Array.length buckets
+  let load_factor tab = float_of_int tab.size /. float_of_int (capacity tab)
+  let create hash n = {hash; size = 0; buckets = Array.make n Empty}
+  let index k tab = tab.hash k mod capacity tab
+
+  let rec find_slot k tab i =
+    let pos = (index k tab + i) mod capacity tab in
+    match tab.buckets.(pos) with
+    | Empty -> pos
+    | Deleted -> find_slot k tab (i + 1)
+    | Full (k', _) when k = k' -> pos
+    | Full _ -> find_slot k tab (i + 1)
+
+  let insert_no_resize k v tab =
+    let pos = find_slot k tab 0 in
+    match tab.buckets.(pos) with
+    | Empty | Deleted ->
+      tab.buckets.(pos) <- Full (k, v);
+      tab.size <- tab.size + 1
+    | Full (k', _) when k = k' -> tab.buckets.(pos) <- Full (k, v)
+    | Full _ -> failwith "Invalid state"
+
+  let resize tab new_cap =
+    let old_buckets = tab.buckets in
+    let new_tab =
+      {hash = tab.hash; size = 0; buckets = Array.make new_cap Empty}
+    in
+    Array.iter
+      (function
+        | Full (k, v) -> insert_no_resize k v new_tab
+        | _ -> ())
+      old_buckets;
+    tab.buckets <- new_tab.buckets;
+    tab.size <- new_tab.size
+
+  let insert k v tab =
+    if load_factor tab > expand_factor then resize tab (2 * capacity tab);
+    insert_no_resize k v tab
+
+  let find k tab =
+    let pos = find_slot k tab 0 in
+    match tab.buckets.(pos) with
+    | Full (_, v) -> Some v
+    | _ -> None
+
+  let remove k tab =
+    let pos = find_slot k tab 0 in
+    match tab.buckets.(pos) with
+    | Full (k', _) when k = k' ->
+      tab.buckets.(pos) <- Deleted;
+      tab.size <- tab.size - 1;
+      if load_factor tab < shrink_factor && capacity tab > 1 then
+        resize tab (capacity tab / 2)
+    | _ -> ()
+
+  let bindings tab =
+    Array.fold_left
+      (fun acc content ->
+        match content with
+        | Full (k, v) -> (k, v) :: acc
+        | _ -> acc)
+      [] tab.buckets
+
+  let of_list hash lst =
+    let tab = create hash (List.length lst) in
+    List.iter (fun (k, v) -> insert k v tab) lst;
+    tab
+end
+\end{lstlisting}
+
+
+\problem[functorized BST]
+Our implementation of BSTs assumed that it was okay to compare values using the built-in comparison operators <, =,
+and >. But what if the client wanted to use their own comparison operators? (e.g., to ignore case in strings, or to have sets
+of records where only a single field of the record was used for ordering.) Implement a \code{BstSet} abstraction as a functor
+parameterized on a structure that enables client-provided comparison operator(s), much like the standard library Set.
+
+\begin{lstlisting}[language=OCaml]
+module type Set = sig
+  type elt
+  type t
+  val empty    : t
+  val insert   : elt -> t -> t
+  val mem      : elt -> t -> bool
+  val of_list  : elt list -> t
+  val elements : t -> elt list
+end
+ 
+module type Ordered = sig
+  type t
+  val compare : t -> t -> int
+end
+ 
+module BstSet (Ord : Ordered) : Set with type elt = Ord.t = struct
+  type elt = Ord.t
+ 
+  type t = Leaf | Node of t * elt * t
+ 
+  let empty = Leaf
+ 
+  let rec mem x = function
+    | Leaf -> false
+    | Node (l, v, r) ->
+      begin
+        match compare x v with
+        | ord when ord < 0 -> mem x l
+        | ord when ord > 0 -> mem x r
+        | _                -> true
+      end
+ 
+  let rec insert x = function
+    | Leaf -> Node (Leaf, x, Leaf)
+    | Node (l, v, r) ->
+      begin
+        match compare x v with
+        | ord when ord < 0 -> Node(insert x l, v, r         )
+        | ord when ord > 0 -> Node(l,          v, insert x r)
+        | _                -> Node(l,          x, r         )
+      end
+ 
+  let of_list lst =
+    List.fold_left (fun s x -> insert x s) empty lst
+ 
+  let rec elements = function
+    | Leaf -> []
+    | Node (l, v, r) -> (elements l) @ [v] @ (elements r)
+end
+
+module IntSet = BstSet (Int)
+let example_set = IntSet.(empty |> insert 1)
+\end{lstlisting}
+
+\problem[efficient traversal]
+Suppose you wanted to convert a tree to a list. You'd have to put the values stored in the tree in some order. Here are three ways of doing that:
+\begin{itemize}
+  \item \textit{preorder}: each node's value appears in the list before the values of its left then right subtrees.
+  \item \textit{inorder}: the values of the left subtree appear, then the value at the node, then the values of the right subtree.
+  \item \textit{postorder}: the values of a node's left then right subtrees appear, followed by the value at the node.
+\end{itemize}
+Here is code that implements those \textit{traversals}, along with some example applications:
+\begin{lstlisting}[language=OCaml]
+type 'a tree = Leaf | Node of 'a tree * 'a * 'a tree
+
+let rec preorder = function
+  | Leaf -> []
+  | Node (l,v,r) -> [v] @ preorder l @ preorder r
+
+let rec inorder = function
+  | Leaf -> []
+  | Node (l,v,r) -> inorder l @ [v] @ inorder r
+
+let rec postorder = function
+  | Leaf -> []
+  | Node (l,v,r) -> postorder l @ postorder r @ [v]
+\end{lstlisting}
+On unbalanced trees, the traversal functions above require quadratic worst-case time (in the number of nodes), because
+of the \code{@} operator. Re-implement the functions without \code{@}, and instead using \code{::}, such that they perform exactly one \code{cons}
+per \code{Node} in the tree. Thus, the worst-case execution time will be linear. You will need to add an additional accumulator
+argument to each function, much like with tail recursion. (But your implementations won't actually be tail recursive.)
+
+
+\begin{lstlisting}[language=OCaml]
+type 'a tree = Leaf | Node of 'a tree * 'a * 'a tree
+
+let rec preorder t =
+  (* [go acc t] is equivalent to [List.rev (preorder t) @ acc] *)
+  let rec go acc = function
+    | Leaf -> acc
+    | Node (l,v,r) -> go (go (v :: acc) l) r
+  in
+  List.rev (go [] t)
+
+let rec inorder t =
+  (* [go acc t] is equivalent to [List.rev (inorder t) @ acc] *)
+  let rec go acc = function
+    | Leaf -> acc
+    | Node (l,v,r) -> go (v :: go acc l) r
+  in
+  List.rev (go [] t)
+
+let rec postorder t =
+  (* [go acc t] is equivalent to [List.rev (postorder t) @ acc] *)
+  let rec go acc = function
+    | Leaf -> acc
+    | Node (l,v,r) -> v :: go (go acc l) r
+  in
+  List.rev (go [] t)
+\end{lstlisting}
+
+% \problem[pow2]
+% Using this type: \code{type 'a sequence = Cons of 'a * (unit -> 'a sequence)}, define a value \code{pow2 : int sequence} whose elements are the powers of two: \code{<1; 2; 4; 8; 16; ...>}.
+% 
+% \begin{lstlisting}[language=OCaml]
+% let rec pow2from n =
+%   Cons (n, fun () -> pow2from (2 * n))
+% 
+% let pow2 = pow2from 1
+% \end{lstlisting}
+% 
+% \problem[more sequences]
+% Define the following sequences:
+% \begin{itemize}
+%   \item the even naturals
+%   \item the lower-case alphabet on endless repeat: a, b, c, \dots, z, a, b, \dots
+%   \item unending pseudorandom coin flips (e.g., booleans or a variant with \code{Heads} and \code{Tails} constructors)
+% \end{itemize}
+
+
+% \begin{lstlisting}[language=OCaml]
+% let rec from_skip n k =
+%   Cons (n, fun () -> from_skip (n + k) k)
+% 
+% let evens = from_skip 0 2
+% 
+% let rec alphabet_gen n  =
+%   Cons (Char.chr ((n mod 26) + Char.code 'a'), 
+%         fun () -> alphabet_gen (n + 1))
+% 
+% let alphabet = alphabet_gen 0
+% 
+% let rec flips_gen next = Cons (next, fun () -> flips_gen (Random.bool ()))
+% let flips = Random.self_init (); flips_gen (Random.bool ())   
+% \end{lstlisting}
+% 
+% \problem[nth]
+% Define a function \code{nth} : \code{'a sequence -> int -> 'a}, such that \code{nth s n} the element at zero-based position n in sequence s. For example, \code{nth pow2 0 = 1}, and \code{nth pow2 4 = 16}.
+% 
+% \begin{lstlisting}[language=OCaml]
+% let rec nth (Cons (h, tf)) n =
+%   if n = 0 then
+%     h
+%   else
+%     nth (tf ()) (n - 1)    
+% \end{lstlisting}
+% 
+% \problem[filter]
+% Define a function \code{filter} : \code{('a -> bool) -> 'a sequence -> 'a sequence}, such that \code{filter p s} is the sub-sequence of \code{s} whose elements satisfy the predicate \code{p}. For example, \code{filter (fun n -> n mod 2 = 0) nats} would be the sequence \code{<0; 2; 4; 6; 8; 10; ...>}. If there is no element of \code{s} that satisfies \code{p}, then \code{filter p s} does not terminate.
+% 
+% \begin{lstlisting}[language=OCaml]
+% let rec filter p (Cons (h, tf)) =
+%   if p h then
+%     Cons (h, fun () -> filter p (tf ()))
+%   else
+%     filter p (tf ())    
+% \end{lstlisting}
+% 
+% \problem[interleave]
+% Define a function \code{interleave : 'a sequence -> 'a sequence -> 'a sequence}, such that
+% \code{interleave <a1; a2; a3; ...> <b1; b2; b3; ...>} is the sequence \code{<a1; b1; a2; b2; a3; b3; ...>}. For example, \code{interleave nats pow2} would be \code{<0; 1; 1; 2; 2; 4; 3; 8; ...>}.
+% 
+% \begin{lstlisting}[language=OCaml]
+% let rec interleave (Cons (h1, tf1)) (Cons (h2, tf2)) =
+%   Cons (h1, fun () ->
+%       Cons (h2, fun () ->
+%           interleave (tf1 ()) (tf2 ())))
+% \end{lstlisting}
+% 
+% \problem[sift]
+% The \textit{Sieve of Eratosthenes} is a way of computing the prime numbers.
+% \begin{itemize}
+%   \item Start with the sequence \code{<2; 3; 4; 5; 6; ...>}.
+%   \item Take 2 as prime. Delete all multiples of 2, since they cannot be prime. That leaves \code{<3; 5; 7; 9; 11; ...>}.
+%   \item Take 3 as prime and delete its multiples. That leaves \code{<5; 7; 11; 13; 17; ...>}.
+%   \item Take 5 as prime, etc.
+% \end{itemize}
+% Define a function \code{sift : int -> int sequence -> int sequence}, such that \code{sift n s} removes all multiples of \code{n} from \code{s}. \textit{Hint: filter}.
+% 
+% \begin{lstlisting}[language=OCaml]
+% let rec sift n =
+%   filter (fun x -> x mod n <> 0)    
+% \end{lstlisting}
+% 
+% \problem[primes]
+% Define a sequence \code{prime : int sequence}, containing all the prime numbers starting with 2.
+% 
+% \begin{lstlisting}[language=OCaml]
+% let rec sieve (Cons (h, tf)) =
+%   Cons (h, fun () -> tf () |> sift h |> sieve)
+% 
+% let primes =
+%   sieve (from 2)   
+% \end{lstlisting}
+% 
+% \problem[approximately e]
+% The exponential function $e^x$ can be computed by the following infinite sum:
+% $$
+%   e^x = \frac{x^0}{0!} + \frac{x^1}{1!} + \frac{x^2}{2!} + \frac{x^3}{3!} + \dots + \frac{x^k}{k!} + \dots
+% $$
+% 
+% Define a function \code{e_terms: float -> float sequence}. Element \code{k} of the sequence should be term \code{k} from the infinite sum. For example, \code{e_terms 1.0} is the sequence \code{<1.0; 1.0; 0.5; 0.1666...; 0.041666...; ...>}. The easy way to compute that involves a function that computes $f(k) = \frac{x^k}{k!}$.
+% 
+% Define a function \code{total: float sequence -> float sequence}, such that \code{total} \code{<a; b; c; ...>} is a running total of the input elements, i.e., \code{<a; a+b; a+b+c; ...>}.
+% 
+% By using \code{e_terms} and \code{total} together, you will be able to compute successive approximations of $e^x$ that correspond to finite prefixes of the infinite summation. For example, you could compute the stream \code{<1.0; 2.0; 2.5; 2.66666666666666652; 2.70833333333333304; ...>}. It contains successive approximations of $e^1$, such that element $n$ of the stream is $\sum_{k=0}^{n} \frac{1^k}{k!}$.
+% 
+% Define a function \code{within: float -> float sequence -> float}, such that \code{within eps s} is the first element of \code{s} for which the absolute difference between that element and the element before it is strictly less than \code{eps}. If there is no such element, \code{within} is permitted not to terminate (i.e., go into an ``infinite loop''). As a precondition, the \textit{tolerance} \code{eps} must be strictly positive. For example, \code{within 0.1} \code{<1.0; 2.0; 2.5; 2.75; 2.875; 2.9375; 2.96875; ...>} is 2.9375.
+% 
+% Finally, define a function \code{e} : \code{float -> float -> float} such that \code{e x eps} is $e^x$ computed using a finite prefix of the infinite summation above. The computation should halt when the absolute difference between successive approximations is below \code{eps}, which must be strictly positive. For example, \code{e 1. 0.01} would be 2.71666666666666634.
+% 
+% 
+% \begin{lstlisting}[language=OCaml]
+% type 'a sequence = Cons of 'a * (unit -> 'a sequence)
+% 
+% let rec fact n = if n = 0 then 1 else n * fact (n - 1)
+% let kth_term x k = (x ** float_of_int k) /. float_of_int (fact k)
+% let rec e_terms_from x k = Cons (kth_term x k, fun () -> e_terms_from x (k + 1))
+% let e_terms x = e_terms_from x 0
+% 
+% let total (Cons (h, tf)) =
+%   let rec total' (Cons (h, tf)) acc =
+%     Cons (h +. acc, fun () -> total' (tf ()) (h +. acc))
+%   in
+%   total' (Cons (h, tf)) 0.0
+% 
+% let within eps s =
+%   let rec within' eps prev (Cons (h, tf)) =
+%     if abs_float (h -. prev) < eps then h else within' eps h (tf ())
+%   in
+%   within' eps max_float s
+% 
+% let e x eps = e_terms x |> total |> within eps
+% \end{lstlisting}
+% 
+% \problem[better e]
+% Although the idea for computing $e^x$ above through the summation of an infinite series is good, the exact algorithm suggested above could be improved. For example, computing the 20th term in the sequence leads to a very large numerator
+% and denominator if $x$ is large. Investigate that behavior, comparing it to the built-in function \code{exp : float -> float}. Find a better way to structure the computation to improve the approximations you obtain. \textit{Hint: what if when
+%   computing term $k$ you already had term $k - 1$? Then you could just do a single multiplication and division.}
+% 
+% Also, you could improve the test that \code{within} uses to determine whether two values are close. A good one for determining
+% whether $a$ and $b$ are close might be relative distance:
+% 
+% \begin{lstlisting}[language=OCaml]
+% type 'a sequence = Cons of 'a * (unit -> 'a sequence)
+% 
+% let rec e_terms_from x k curr_term =
+%   Cons
+%     ( curr_term,
+%       fun () -> e_terms_from x (k + 1) (curr_term *. x /. float_of_int (k + 1))
+%     )
+% 
+% let e_terms x = e_terms_from x 0 1.0 (* Start with term_0 = 1.0 *)
+% 
+% let within eps s =
+%   let rec within' eps prev (Cons (h, tf)) =
+%     let rel_error = abs_float (h -. prev) /. min h prev in
+%     if rel_error < eps then h else within' eps h (tf ())
+%   in
+%   within' eps max_float s
+% 
+% let total (Cons (h, tf)) =
+%   let rec total' (Cons (h, tf)) acc =
+%     Cons (h +. acc, fun () -> total' (tf ()) (h +. acc))
+%   in
+%   total' (Cons (h, tf)) 0.0
+% 
+% let e x eps = e_terms x |> total |> within eps
+% let _ = print_endline (string_of_float (e 1.0 1e-15))
+% \end{lstlisting}
+% 
+% \problem[different sequence rep]
+% Consider this alternative representation of sequences:
+% \begin{lstlisting}[language=OCaml]
+% type 'a sequence = Cons of 'a * (unit -> 'a sequence)
+% \end{lstlisting}
+% How would you code up \code{hd} : \code{'a sequence -> 'a}, \code{tl} : \code{'a sequence -> 'a sequence}, \code{nats} : \code{int sequence}, and \code{map} : \code{('a -> 'b) -> 'a sequence -> 'b sequence} for it? Explain how this representation is even lazier than our original representation.
+% 
+% \begin{lstlisting}[language=OCaml]
+% (* We isolate this solution in a module to isolate it from the rest of the
+%    file. This representation is even lazier than our original because
+%    the head of the sequence won't be produced until the thunk is forced,
+%    whereas before the head was always available and only the tail
+%    was a thunk. *)
+% module DifferentsequenceRep = struct
+%   type 'a sequence = Cons of (unit -> 'a * 'a sequence)
+% 
+%   let hd (Cons th) =
+%     th () |> fst
+% 
+%   let tl (Cons th) =
+%     th () |> snd
+% 
+%   let rec from n =
+%     Cons (fun () -> (n, from (n + 1)))
+% 
+%   let rec nats =
+%     from 0
+% 
+%   let rec map f (Cons th) =
+%     Cons begin fun () ->
+%       let h, t = th () in
+%       (f h, map f t)
+%     end
+% end    
+% \end{lstlisting}
+% 
+% \problem[lazy hello]
+% Define a value of type \code{unit Lazy.t}, such that forcing that value with \code{Lazy.force} causes \code{"Hello lazy world"} to be printed. If you force it again, the string should not be printed.
+% 
+% \begin{lstlisting}[language=OCaml]
+% let hello =
+%   lazy (print_endline "Hello lazy world")
+% \end{lstlisting}
+% 
+% \problem[lazy and]
+% Define a function \code{(&&&) : bool Lazy.t -> bool Lazy.t -> bool}. It should behave like a short circuit
+% Boolean AND. That is, \code{lb1 &&& lb2} should first force \code{lb1}. If it is false, the function should return false.
+% Otherwise, it should force \code{lb2} and return its value.
+% 
+% \begin{lstlisting}[language=OCaml]
+% let (&&&) b1 b2 =
+%   if Lazy.force b1 then
+%     Lazy.force b2
+%   else
+%     false
+% \end{lstlisting}
+% 
+% \problem[lazy sequence]
+% Implement \code{map} and \code{filter} for the \code{'a lazysequence} type provided in the section on laziness.
+% 
+% \begin{lstlisting}[language=OCaml]
+% module Lazysequence = struct
+%   type 'a lazysequence =
+%     | Cons of 'a * 'a lazysequence Lazy.t
+% 
+%   let rec map f (Cons (h, t)) =
+%     Cons (f h, lazy (map f (Lazy.force t)))
+% 
+%   let rec filter p (Cons (h, t)) =
+%     let tl = lazy (filter p (Lazy.force t)) in
+%     if p h then
+%       Cons (h, tl)
+%     else
+%       Lazy.force tl
+% end    
+% \end{lstlisting}
+% 
+% \problem[promise and resolve lwt]
+% Repeat the above exercise, but use the Lwt library instead of our own Promise library. Make sure to use Lwt's I/O
+% functions (e.g., \code{Lwt_io.printf}).
+% 
+% \begin{lstlisting}[language=OCaml]
+% (* to run this in utop, first [#require "lwt.unix";;] *)
+% 
+% let _ =
+%   let p, r = Lwt.wait () in
+%   let _ = p >>= (fun i -> Lwt_io.printf "%i\n" i) in
+%   Lwt.wakeup r 42    
+% \end{lstlisting}
+% 
+% \problem[timing challenge 1]
+% Here is a function that produces a time delay. We can use it to simulate an I/O call that takes a long time to complete.
+% \begin{lstlisting}[language=OCaml]
+% (** [delay s] is a promise that resolves after about [s] seconds. *)
+% $let delay (sec : float) : unit Lwt.t =
+%   Lwt_unix.sleep sec$
+% \end{lstlisting}
+% 
+% Write a function \code{delay\_then\_print} : \code{unit -> unit Lwt.t} that delays for three seconds then prints "done".
+% 
+% \begin{lstlisting}[language=OCaml]
+% (** [delay s] is a promise that resolves after about [s] seconds. *)
+%   let delay (sec : float) : unit Lwt.t =
+%     Lwt_unix.sleep sec
+% 
+%   (** prints ["done"] after about 3 seconds. *)
+%   let delay_then_print () =
+%     delay 3. >>= fun () ->
+%     Lwt_io.printl "done"   
+% \end{lstlisting}
+% 
+% \problem[timing challenge 2]
+% What happens when \code{timing2} () is run? How long does it take to run? Make a prediction, then run the code to find
+% out.
+% \begin{lstlisting}[language=OCaml]
+% open Lwt.Infix
+% 
+% let timing2 () =
+%   let _t1 = delay 1. >>= fun () -> Lwt_io.printl "1" in
+%   let _t2 = delay 10. >>= fun () -> Lwt_io.printl "2" in
+%   let _t3 = delay 20. >>= fun () -> Lwt_io.printl "3" in
+%   Lwt_io.printl "all done"
+% \end{lstlisting}
+% 
+% \begin{lstlisting}[language=OCaml]
+%  let timing2 () =
+%     let _t1 = delay 1. >>= fun () -> Lwt_io.printl "1" in
+%     let _t2 = delay 10. >>= fun () -> Lwt_io.printl "2" in
+%     let _t3 = delay 20. >>= fun () -> Lwt_io.printl "3" in
+%     Lwt_io.printl "all done"
+% 
+%   (* Answer:
+%      - "all done" prints immediately.
+%      - about a second later, "1" prints.
+%      - about 9 more seconds later, "2" prints.
+%      - about 10 more seconds later, "3" prints.
+%        The total elapsed time is about 20 seconds. *)
+%     
+% \end{lstlisting}
+% 
+% \problem[timing challenge 3]
+% What happens when \code{timing3} () is run? How long does it take to run? Make a prediction, then run the code to find
+% out.
+% \begin{lstlisting}[language=OCaml]
+% open Lwt.Infix
+% 
+% let timing3 () =
+%   delay 1. >>= fun () ->
+%   Lwt_io.printl "1" >>= fun () ->
+%   delay 10. >>= fun () ->
+%   Lwt_io.printl "2" >>= fun () ->
+%   delay 20. >>= fun () ->
+%   Lwt_io.printl "3" >>= fun () ->
+%   Lwt_io.printl "all done"
+% \end{lstlisting}
+% 
+% \begin{lstlisting}[language=OCaml]
+% let timing3 () =
+%     delay 1. >>= fun () ->
+%     Lwt_io.printl "1" >>= fun () ->
+%     delay 10. >>= fun () ->
+%     Lwt_io.printl "2" >>= fun () ->
+%     delay 20. >>= fun () ->
+%     Lwt_io.printl "3" >>= fun () ->
+%     Lwt_io.printl "all done"
+% 
+%   (* Answer:
+%      - after about a second, "1" prints.
+%      - about 10 more seconds later, "2" prints.
+%      - about 20 more seconds later, "3" prints.
+%      - then "all done" immediately prints.
+%        The total elapsed time is about 31 seconds. *)    
+% \end{lstlisting}
+% 
+% \problem[timing challenge 4]
+% What happens when \code{timing4} () is run? How long does it take to run? Make a prediction, then run the code to find
+% out.
+% \begin{lstlisting}[language=OCaml]
+% open Lwt.Infix
+% 
+% let timing4 () =
+%   let t1 = delay 1. >>= fun () -> Lwt_io.printl "1" in
+%   let t2 = delay 10. >>= fun () -> Lwt_io.printl "2" in
+%   let t3 = delay 20. >>= fun () -> Lwt_io.printl "3" in
+%   Lwt.join [t1; t2; t3] >>= fun () ->
+%   Lwt_io.printl "all done"
+% \end{lstlisting}
+% 
+% \begin{lstlisting}[language=OCaml]
+%  let timing4 () =
+%     let t1 = delay 1. >>= fun () -> Lwt_io.printl "1" in
+%     let t2 = delay 10. >>= fun () -> Lwt_io.printl "2" in
+%     let t3 = delay 20. >>= fun () -> Lwt_io.printl "3" in
+%     Lwt.join [t1; t2; t3] >>= fun () ->
+%     Lwt_io.printl "all done"
+% 
+%   (* Answer:
+%      - after about a second, "1" prints.
+%      - about 9 more seconds later, "2" prints.
+%      - about 10 more seconds later, "3" prints.
+%      - then "all done" immediately prints.
+%        The total elapsed time is about 20 seconds. *)   
+% \end{lstlisting}
+% 
+% \problem[file monitor]
+% Write an Lwt program that monitors the contents of a file named ``log''. Specifically, your program should open the file,
+% continually read a line from the file, and as each line becomes available, print the line to stdout. When you reach the end
+% of the file (EOF), your program should terminate cleanly without any exceptions.
+% Here is starter code:
+% \begin{lstlisting}[language=OCaml]
+% open Lwt.Infix
+% open Lwt_io
+% open Lwt_unix
+% (** [log ()] is a promise for an [input_channel] that reads from
+%     the file named "log". *)
+%     let log () : input_channel Lwt.t =
+%   openfile "log" (O_RDONLY) >>= fun fd ->
+%   Lwt.return (of_fd ~mode:input fd)
+% 
+% (** [loop ic] reads one line from [ic], prints it to stdout,
+%     then calls itself recursively. It is an infinite loop. *)
+% let rec loop (ic : input_channel) =
+%   failwith "TODO"
+%   (* hint: use [Lwt_io.read_line] and [Lwt_io.printf] *)
+% 
+% (** [monitor ()] monitors the file named "log". *)
+% let monitor () : unit Lwt.t =
+%   log () >>= loop
+% 
+% (** [handler] is a helper function for [main]. If its input is
+%     [End_of_file], it handles cleanly exiting the program by
+%     returning the unit promise. Any other input is re-raised
+%     with [Lwt.fail]. *)
+% let handler : exn -> unit Lwt.t =
+%   failwith "TODO"
+% 
+% let main () : unit Lwt.t =
+%   Lwt.catch monitor handler
+% 
+% let _ = Lwt_main.run (main ())
+% \end{lstlisting}
+% 
+% Complete \code{loop} and \code{handler}. You might find the \code{Lwt manual} to be useful.
+% To compile your code, put it in a file named \code{monitor.ml}. Create a \code{dune} file for it:
+% \begin{lstlisting}
+% (executable
+%  (name monitor)
+%  (libraries lwt.unix))
+% \end{lstlisting}
+% And run it as usual:
+% \begin{lstlisting}
+%  $dune exec ./monitor.exe
+% \end{lstlisting}
+% 
+% To simulate a file to which lines are being added over time, open a new terminal window and enter the following commands:
+% \begin{lstlisting} 
+% $ mkfifo log
+% $ cat >log
+% \end{lstlisting}
+% 
+% Now anything you type into the terminal window (after pressing return) will be added to the file named \textit{log}. That will enable you to interactively test your program.
+% 
+% \begin{lstlisting}[language=OCaml]
+% open Lwt_io
+%   open Lwt_unix
+% 
+%   let log () : input_channel Lwt.t =
+%     openfile "log" [O_RDONLY] 0 >>= fun fd ->
+%     Lwt.return (of_fd input fd)
+% 
+%   let rec loop (ic : input_channel) =
+%     read_line ic >>= fun str ->
+%     printlf "%s" str >>= fun () ->
+%     loop ic
+% 
+%   let monitor () : unit Lwt.t =
+%     log () >>= loop
+% 
+%   let handler : exn -> unit Lwt.t = function
+%     | End_of_file -> Lwt.return ()
+%     | exc -> Lwt.fail exc
+% 
+%   let main () : unit Lwt.t =
+%     Lwt.catch monitor handler
+% 
+%   (* uncomment to actually run the monitor:
+%      let _ = Lwt_main.run (main ())
+%   *)
+% 
+% end
+%    
+% \end{lstlisting}
+% 
+% \problem[add opt]
+% Here are the definitions for the maybe monad:
+% \begin{lstlisting}[language=OCaml]
+% module type Monad = sig
+%   type 'a t
+%   val return : 'a -> 'a t
+%   val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
+%   end
+% 
+% module Maybe : Monad =
+%   struct
+%     type 'a t = 'a option
+% 
+%     let return x = Some x
+% 
+%     let (>>=) m f =
+%       match m with
+%       | Some x -> f x
+%       | None -> None
+%   end
+% \end{lstlisting}
+% 
+% Implement \textit{add : int Maybe.t -> int Maybe.t -> int Maybe.t}. If either of the inputs is \textit{None},
+% then the output should be \textit{None}. Otherwise, if the inputs are \textit{Some a} and \textit{Some b} then the output should be \textit{Some
+%   (a+b)}. The definition of \textit{add} must be located outside of \textit{Maybe}, as shown above, which means that your solution may
+% not use the constructors \textit{None} or \textit{Some} in its code.
+% 
+% \begin{lstlisting}[language=OCaml]
+% let add (x : int t) (y : int t) : int t =
+%   x >>= fun a ->
+%   y >>= fun b ->
+%   return (a + b)   
+% \end{lstlisting}
+% 
+% \problem[fmap and join]
+% Here is an extended signature for monads that adds two new operations:
+% \begin{lstlisting}[language=OCaml]
+% module type ExtMonad = sig
+%   type 'a t
+%   val return : 'a -> 'a t
+%   val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
+%   val (>>|) : 'a t -> ('a -> 'b) -> 'b t
+%   val join : 'a t t -> 'a t
+% end
+% \end{lstlisting}
+% Just as the infix operator \code{>>=} is known as \code{bind}, the infix operator \code{>>|} is known as \code{fmap}. The two operators differ only in the return type of their function argument.
+% 
+% Using the box metaphor, \code{>>|} takes a boxed value, and a function that only knows how to work on unboxed values, extracts the value from the box, runs the function on it, and boxes up that output as its own return value.
+% 
+% Also using the box metaphor, \code{join} takes a value that is wrapped in two boxes and removes one of the boxes.
+% 
+% It's possible to implement \code{>>|} and \code{join} directly with pattern matching (as we already implemented \code{>>=}). It's also possible to implement them without pattern matching.
+% 
+% For this exercise, do the former: implement \code{>>|} and \code{join} as part of the \code{Maybe} monad, and do not use \code{>>=} or \code{return} in the body of \code{>>|} or \code{join}.
+% 
+% \begin{lstlisting}[language=OCaml]
+% module type ExtMonad = sig
+%   type 'a t
+%   val return : 'a -> 'a t
+%   val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
+%   val (>>|) : 'a t -> ('a -> 'b) -> 'b t
+%   val join : 'a t t -> 'a t
+% end
+% 
+% module Maybe : ExtMonad =
+% struct
+%   type 'a t = 'a option
+% 
+%   let return x = Some x
+% 
+%   let (>>=) m f =
+%     match m with
+%     | Some x -> f x
+%     | None -> None
+% 
+%   let (>>|) m f =
+%     match m with
+%     | Some x -> Some (f x)
+%     | None -> None
+% 
+%   let join = function
+%     | Some m -> m
+%     | None -> None
+% 
+% end
+%     
+% \end{lstlisting}
+% 
+% \problem[fmap and join again]
+% Solve the previous exercise again. This time, you must use \code{>>}= and \code{return} to implement \code{>>}| and \code{join}, and you
+% may not use \code{Some} or \code{None} in the body of \code{>>}| and \code{join}.
+% 
+% \begin{lstlisting}[language=OCaml]
+% module Maybe : ExtMonad =
+% struct
+%   type 'a t = 'a option
+% 
+%   let return x = Some x
+% 
+%   let (>>=) m f =
+%     match m with
+%     | Some x -> f x
+%     | None -> None
+% 
+%   let (>>|) x f =
+%     x >>= fun a ->
+%     return (f a)
+% 
+%   let join x =
+%     x >>= fun y ->
+%     y
+% 
+% end   
+% \end{lstlisting}
+% 
+% \problem[bind from fmap+join]
+% The previous exercise demonstrates that \code{>>|} and \code{join} can be implemented entirely in terms of \code{>>=} (and \code{return}), without needing to know anything about the representation type \code{'a t} of the monad.
+% 
+% It's actually possible to go the other direction. That is, \code{>>=} can be implemented using just \code{>>|} and \code{join}, without needing to know anything about the representation type \code{'a t}.
+% 
+% Prove that this is so by completing the following code:
+% \begin{lstlisting}[language=OCaml]
+% module type FmapJoinMonad = sig
+%   type 'a t
+%   val (>>|) : 'a t -> ('a -> 'b) -> 'b t
+%   val join : 'a t t -> 'a t
+%   val return : 'a -> 'a t
+% end
+% 
+% module type BindMonad = sig
+%   type 'a t
+%   val return : 'a -> 'a t
+%   val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
+% end
+% 
+% module MakeMonad (M : FmapJoinMonad) : BindMonad = struct
+%   (* TODO *)
+% end
+% \end{lstlisting}
+% 
+% Hint: \textit{let the types be your guide}.
+% 
+% \begin{lstlisting}[language=OCaml]
+% module type FmapJoinMonad = sig
+%   type 'a t
+%   val (>>|) : 'a t -> ('a -> 'b) -> 'b t
+%   val join : 'a t t -> 'a t
+%   val return : 'a -> 'a t
+% end
+% 
+% module type BindMonad = sig
+%   type 'a t
+%   val return : 'a -> 'a t
+%   val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
+% end
+% 
+% module MakeMonad (M : FmapJoinMonad) : BindMonad = struct
+%   include M
+%   let (>>=) m f =
+%     m >>| f |> join
+% end    
+% \end{lstlisting}
+% 
+% \problem[list monad]
+% We've seen three examples of monads already; let's examine a fourth, the \code{list monad}. The ``something more'' that it does is to upgrade functions to work on lists instead of just single values. (Note, there is no notion of concurrency intended here. It's not that the \code{Lwt monad} runs functions concurrently on every element of a list. The Lwt monad does, however, provide that kind of functionality.)
+% For example, suppose you have these functions:
+% \begin{lstlisting}[language=OCaml]
+% let inc x = x + 1
+% let pm x = [x ; -x]
+% \end{lstlisting}
+% Then the list monad could be used to apply those functions to every element of a list and return the result as a list. For example,
+% \begin{itemize}
+%   \item \code{[1; 2; 3] >>\| inc} is \code{[2; 3; 4]}.
+%   \item \code{[1; 2; 3] >>= pm} is \code{[1; -1; 2; -2; 3; -3]}.
+%   \item \code{[1; 2; 3] >>= pm >>\| inc} is \code{[2; 0; 3; -1; 4; -2]}.
+% \end{itemize}
+% One way to think about this is that the list monad operators take a list of inputs to a function, run the function on all those inputs, and give you back the combined list of outputs.
+% Complete the following definition of the list monad:
+% \begin{lstlisting}[language=OCaml]
+% module type ExtMonad = sig
+%   type 'a t
+%   val return : 'a -> 'a t
+%   val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
+%   val (>>|) : 'a t -> ('a -> 'b) -> 'b t
+% end
+% val join : 'a t t -> 'a t
+% end
+% 
+% module ListMonad : ExtMonad = struct
+%   type 'a t = 'a list
+% 
+%   (* TODO *)
+% end
+% \end{lstlisting}
+% Hints: Leave \code{>>=} for last. Let the types be your guide. There are two very useful list library functions that can help you.
+% 
+% \begin{lstlisting}[language=OCaml]
+% module ListMonad : ExtMonad = struct
+%   type 'a t = 'a list
+% 
+%   let return x =
+%     [x]
+% 
+%   let join =
+%     List.flatten
+% 
+%   let (>>|) m f =
+%     List.map f m
+% 
+%   let (>>=) m f =
+%     m |> List.map f |> join
+% end    
+% \end{lstlisting}
+% 

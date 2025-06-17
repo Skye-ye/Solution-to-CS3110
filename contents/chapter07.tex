@@ -89,7 +89,9 @@ end
 
 \problem[binary search tree map]
 Write a module \code{BstMap} that implements the \code{Map} module type using a binary search tree type. Binary trees were covered earlier when we discussed algebraic data types. A binary search tree (BST) is a binary tree that obeys the following BST Invariant:
-For any node \code{n}, every node in the left subtree of \code{n} has a value less than \code{n}'s value, and every node in the right subtree of \code{n} has a value greater than \code{n}'s value.
+\begin{quote}
+  For any node \code{n}, every node in the left subtree of \code{n} has a value less than \code{n}'s value, and every node in the right subtree of \code{n} has a value greater than \code{n}'s value.
+\end{quote}
 Your nodes should store pairs of keys and values. The keys should be ordered by the BST Invariant. Based on that invariant, you will always know whether to look left or right in a tree to find a particular key.
 
 \begin{lstlisting}[language=OCaml]
@@ -186,7 +188,9 @@ Using the \code{CharMap} you just made, create a map that contains the following
   \item \code{'V'} maps to \code{"Victor"}
 \end{itemize}
 Use \code{CharMap.find} to find the binding for \code{'E'}.
+
 Now remove the binding for \code{'A'}. Use \code{CharMap.mem} to find whether \code{'A'} is still bound.
+
 Use the function \code{CharMap.bindings} to convert your map into an association list.
 
 \begin{lstlisting}[language=OCaml]
@@ -210,7 +214,9 @@ Here is a type for dates:
 type date = {month : int; day : int}
 \end{lstlisting}
 For example, March 31st would be represented as \code{\{month = 3; day = 31\}}. Our goal in the next few exercises is to implement a map whose keys have type \code{date}.
+
 Obviously it's possible to represent invalid dates with type \code{date}---for example, \code{\{ month=6; day=50 \}} would be June 50th, which is not a real date. The behavior of your code in the exercises below is unspecified for invalid dates.
+
 To create a map over dates, we need a module that we can pass as input to \code{Map.Make}. That module will need to match the \code{Map.OrderedType} signature. Create such a module. Here is some code to get you started:
 \begin{lstlisting}[language=OCaml]
 module Date = struct
@@ -241,6 +247,7 @@ Use the \code{Map.Make} functor with your \code{Date} module to create a \code{D
 type calendar = string DateMap.t
 \end{lstlisting}
 The idea is that \code{calendar} maps a date to the name of an event occurring on that date.
+
 Using the functions in the \code{DateMap} module, create a calendar with a few entries in it, such as birthdays or anniversaries.
 
 \begin{lstlisting}[language=OCaml]
@@ -319,7 +326,6 @@ end
 
 \problem[Print Int]
 Create a module named \code{PrintInt} that is the result of applying the functor \code{Print} to a new module \code{Int}. You will need to write \code{Int} yourself. The type \code{Int.t} should be \code{int}. Hint: do not seal \code{Int}.
-Experiment with \code{PrintInt} in utop. Use it to print the value of an integer.
 
 \begin{lstlisting}[language=OCaml]
 module Int = struct
@@ -331,7 +337,6 @@ end
 
 \problem[Print String]
 Create a module named \code{PrintString} that is the result of applying the functor \code{Print} to a new module \code{MyString}. You will need to write \code{MyString} yourself. Hint: do not seal \code{MyString}.
-Experiment with \code{PrintString} in utop. Use it to print the value of a string.
 
 \begin{lstlisting}[language=OCaml]
 module MyString = struct
@@ -343,6 +348,7 @@ end
 
 \problem[Print String reuse revisited]
 The \code{PrintString} module you created above supports just one operation: \code{print}. It would be great to have a module that supports all the \code{String} module functions in addition to that \code{print} operation, and it would be super great to derive such a module without having to copy any code.
+
 Define a module \code{StringWithPrint}. It should have all the values of the built-in \code{String} module. It should also have the \code{print} operation, which should be derived from the \code{Print} functor rather than being copied code. Hint: use two \code{include} statements.
 
 \begin{lstlisting}[language=OCaml]

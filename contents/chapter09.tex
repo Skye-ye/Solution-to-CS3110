@@ -50,7 +50,8 @@ let (+:=) x y =
 \end{lstlisting}
 
 \problem[norm]
-The Euclidean norm of an $n$-dimensional vector $x = (x_1, \ldots, x_n)$ is written $|x|$ and is defined to be $\sqrt{x_1^2 + \cdots + x_n^2}$.
+The Euclidean norm of an $n$-dimensional vector $x = (x_1, \ldots, x_n)$ is written $|x|$ and is defined to be
+\[\sqrt{x_1^2 + \cdots + x_n^2}.\]
 Write a function \code{norm : vector -> float} that computes the Euclidean norm of a vector, where \code{vector} is defined as follows:
 \begin{lstlisting}[language=OCaml]
 (* AF: the float array [| x1; ...; xn |] represents the
@@ -66,8 +67,9 @@ let norm v =
 \end{lstlisting}
 
 \problem[normalize]
-Every vector $x$ can be normalized by dividing each component by $|x|$; this yields a vector with norm 1: $(\frac{x_1}{|x|}, \ldots, \frac{x_n}{|x|})$.
-Write a function \code{normalize : vector -> unit} that normalizes a vector "in place" by mutating the input array. Hint: \code{Array.iteri}.
+Every vector $x$ can be normalized by dividing each component by $|x|$; this yields a vector with norm 1:
+\[\left(\frac{x_1}{|x|}, \ldots, \frac{x_n}{|x|}\right).\]
+Write a function \code{normalize : vector -> unit} that normalizes a vector "in place" by mutating the input array. \textit{Hint: \code{Array.iteri}.}
 
 \begin{lstlisting}[language=OCaml]
 let normalize v =
@@ -117,7 +119,8 @@ let fact_loop n =
 
 \problem[init matrix]
 The \code{Array} module contains two functions for creating an array: \code{make} and \code{init}. \code{make} creates an array and fills it with a default value, while \code{init} creates an array and uses a provided function to fill it in. The library also contains a function \code{make_matrix} for creating a two-dimensional array, but it does not contain an analogous \code{init_matrix} to create a matrix using a function for initialization.
-Write a function \code{init_matrix : int -> int -> (int -> int -> 'a) -> 'a array array} such that \code{init_matrix n o f} creates and returns an \code{n} by \code{o} matrix \code{m} with \code{m.(i).(j) = f i j} for all \code{i} and \code{j} in bounds.
+
+Write a function \code{init_matrix : int -> int -> (int -> int -> 'a) -> 'a array array} such that \\ \code{init_matrix n o f} creates and returns an \code{n} by \code{o} matrix \code{m} with \code{m.(i).(j) = f i j} for all \code{i} and \code{j} in bounds.
 
 \begin{lstlisting}[language=OCaml]
 let init_matrix n o f =

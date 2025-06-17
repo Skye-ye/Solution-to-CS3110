@@ -18,6 +18,7 @@ let rec repeat f n x =
 
 \problem[product]
 Use \code{fold_left} to write a function \code{product_left} that computes the product of a list of floats. The product of the empty list is \code{1.0}. Hint: recall how we implemented sum in just one line of code in lecture.
+
 Use \code{fold_right} to write a function \code{product_right} that computes the product of a list of floats. Same hint applies.
 
 \begin{lstlisting}[language=OCaml]
@@ -60,6 +61,7 @@ let sum_cube_odd_p n =
 
 \problem[exists]
 Consider writing a function \code{exists: ('a -> bool) -> 'a list -> bool}, such that \code{exists p [a1; ...; an]} returns whether at least one element of the list satisfies the predicate \code{p}. That is, it evaluates the same as \code{(p a1) \|\| (p a2) \|\| ... \|\| (p an)}. When applied to an empty list, it evaluates to \code{false}.
+
 Write three solutions to this problem, as we did above:
 \begin{itemize}
   \item \code{exists_rec}, which must be a recursive function that does not use the \code{List} module,
@@ -144,7 +146,8 @@ let join_with strs sep =
 
 \problem[association list keys]
 Recall that an association list is an implementation of a dictionary in terms of a list of pairs, in which we treat the first component of each pair as a key and the second component as a value.
-Write a function \code{keys: ('a * 'b) list -> 'a list} that returns a list of the unique keys in an association list. Since they must be unique, no value should appear more than once in the output list. The order of values output does not matter. How compact and efficient can you make your solution? Can you do it in one line and linearithmic space and time? Hint: \code{List.sort_uniq}.
+
+Write a function \code{keys: ('a * 'b) list -> 'a list} that returns a list of the unique keys in an association list. Since they must be unique, no value should appear more than once in the output list. The order of values output does not matter. How compact and efficient can you make your solution? Can you do it in one line and linearithmic space and time? \textit{Hint: \code{List.sort_uniq}}.
 
 \begin{lstlisting}[language=OCaml]
 (* here are a few solutions of varying efficiency *)
@@ -188,6 +191,7 @@ A mathematical matrix can be represented with lists. In row-major representation
   \end{bmatrix}
 \]
 would be represented as the list \code{[[1; 1; 1]; [9; 8; 7]]}. Let's represent a row vector as an \code{int list}. For example, \code{[9; 8; 7]} is a row vector.
+
 A valid matrix is an \code{int list list} that has at least one row, at least one column, and in which every column has the same number of rows. There are many values of type \code{int list list} that are invalid, for example,
 \begin{itemize}
   \item \code{[]}

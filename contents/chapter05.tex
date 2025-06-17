@@ -146,7 +146,8 @@ let is_unimodal lst =
 
 \problem[powerset]
 Write a function \code{powerset : int list -> int list list} that takes a set \code{S} represented as a list and returns the set of all subsets of \code{S}. The order of subsets in the powerset and the order of elements in the subsets do not matter.
-Hint: Consider the recursive structure of this problem. Suppose you already have \code{p}, such that \code{p = powerset s}. How could you use \code{p} to compute \code{powerset (x :: s)}?
+
+\textit{Hint:} Consider the recursive structure of this problem. Suppose you already have \code{p}, such that \code{p = powerset s}. How could you use \code{p} to compute \code{powerset (x :: s)}?
 
 \begin{lstlisting}[language=OCaml]
 let rec powerset = function
@@ -222,6 +223,7 @@ let squirtle = { name = "squirtle"; hp = 44; ptype = Water }
 
 \problem[safe hd and tl]
 Write a function \code{safe_hd : 'a list -> 'a option} that returns \code{Some x} if the head of the input list is \code{x}, and \code{None} if the input list is empty.
+
 Also write a function \code{safe_tl : 'a list -> 'a list option} that returns the tail of the list, or \code{None} if the list is empty.
 
 \begin{lstlisting}[language=OCaml]
@@ -246,6 +248,7 @@ let max_hp = function
 
 \problem[date before]
 Define a date-like triple to be a value of type \code{int * int * int}. A date is a date-like triple whose first part is a positive year, second part is a month between 1 and 12, and third part is a day between 1 and 31 (or 30, 29, or 28, depending on the month and year). You may ignore leap years.
+
 Write a function \code{is\_before} that takes two dates as input and evaluates to \B{true} if the first argument is a date that comes before the second argument. (If the two dates are the same, the result is \B{false}.)
 
 \begin{lstlisting}[language=OCaml]
