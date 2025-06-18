@@ -76,6 +76,53 @@
 {\normalfont\Large\bfseries\centering}
 {\thesection}
 {1em}
-{}
+{\hrule\vspace{1em}}
+
+% Make the title thicker/bolder
+\makeatletter
+\renewcommand{\maketitle}{%
+    \begin{center}
+        {\Huge\bfseries\@title\par}
+        \vskip 1em
+            {\Large\bfseries\@author\par}
+        \vskip 0.5em
+            {\large\bfseries\@date\par}
+    \end{center}
+    \vskip 2em
+}
+\makeatother
+
+% Make table of contents prettier without tocloft
+\makeatletter
+\renewcommand{\contentsname}{\Huge\bfseries Contents}
+\renewcommand{\l@section}[2]{%
+    \ifnum \c@tocdepth >\z@
+        \addpenalty\@secpenalty
+        \addvspace{1.2em \@plus\p@}%
+        \setlength\@tempdima{1.5em}%
+        \begingroup
+        \parindent \z@ \rightskip \@pnumwidth
+        \parfillskip -\@pnumwidth
+        \leavevmode \large\bfseries
+        \advance\leftskip\@tempdima
+        \hskip -\leftskip
+        #1\nobreak\dotfill \nobreak\hb@xt@\@pnumwidth{\hss #2}\par
+        \endgroup
+    \fi}
+\renewcommand{\l@subsection}[2]{%
+    \ifnum \c@tocdepth >1
+        \addpenalty\@secpenalty
+        \addvspace{0.8em \@plus\p@}%
+        \setlength\@tempdima{2.5em}%
+        \begingroup
+        \parindent \z@ \rightskip \@pnumwidth
+        \parfillskip -\@pnumwidth
+        \leavevmode \normalsize\itshape
+        \advance\leftskip\@tempdima
+        \hskip -\leftskip
+        #1\nobreak\dotfill \nobreak\hb@xt@\@pnumwidth{\hss #2}\par
+        \endgroup
+    \fi}
+\makeatother
 
 \setlength{\parindent}{0pt}

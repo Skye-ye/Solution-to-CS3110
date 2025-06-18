@@ -21,6 +21,33 @@ let acronym (phrase : string) : string =
   |> String.uppercase
 \end{lstlisting}
 
+\problem[All Your Base (medium)]
+Convert a sequence of digits in one base, representing a number, into a sequence of digits in another base, representing the same number.
+
+\begin{lstlisting}[language=OCaml]
+let convert_bases ~from ~digits ~target =
+  if from < 2 || target < 2 then
+    None
+  else if List.exists (fun d -> d < 0 || d >= from) digits then
+    None
+  else
+    let value_in_base_10 =
+      List.fold_left (fun acc digit -> acc * from + digit) 0 digits
+    in
+
+    if value_in_base_10 = 0 then
+      Some [0]
+    else
+      let rec to_target_base n =
+        if n = 0 then
+          []
+        else
+          (n mod target) :: to_target_base (n / target)
+      in
+      let result_digits = to_target_base value_in_base_10 in
+      Some (List.rev result_digits)
+\end{lstlisting}
+
 \problem[Allergies (easy)]
 Given a person's allergy score, determine whether or not they're allergic to a given item, and their full list of allergies.
 An allergy test produces a single numeric score which contains the information about all the allergies the person has (that they were tested for).
@@ -90,6 +117,76 @@ let anagrams target candidates =
     lower_candidate <> lower_target && 
     normalize_word lower_candidate = sorted_target
   ) candidates
+\end{lstlisting}
+
+\problem[Beer Song (medium)]
+Recite the lyrics to that beloved classic, that field-trip favorite: 99 Bottles of Beer on the Wall.
+
+Note that not all verses are identical.
+
+\begin{quote}
+  99 bottles of beer on the wall, 99 bottles of beer.\\
+  Take one down and pass it around, 98 bottles of beer on the wall.\\
+  \dots\\
+  1 bottle of beer on the wall, 1 bottle of beer.\\
+  Take it down and pass it around, no more bottles of beer on the wall.
+
+  No more bottles of beer on the wall, no more bottles of beer.\\
+  Go to the store and buy some more, 99 bottles of beer on the wall.
+\end{quote}
+
+\begin{lstlisting}[language=OCaml]
+let verse n =
+  match n with
+  | 0 ->
+      "No more bottles of beer on the wall, no more bottles of beer.\n" ^
+      "Go to the store and buy some more, 99 bottles of beer on the wall."
+  | 1 ->
+      "1 bottle of beer on the wall, 1 bottle of beer.\n" ^
+      "Take it down and pass it around, no more bottles of beer on the wall."
+  | 2 ->
+      "2 bottles of beer on the wall, 2 bottles of beer.\n" ^
+      "Take one down and pass it around, 1 bottle of beer on the wall."
+  | _ ->
+      Printf.sprintf
+        "%d bottles of beer on the wall, %d bottles of beer.\nTake one down and pass it around, %d bottles of beer on the wall."
+        n
+        n
+        (n - 1)
+
+let recite from until =
+  if until <= 0 then
+    ""
+  else
+    let rec loop i count =
+      if count <= 0 then
+        []
+      else
+        verse i :: loop (i - 1) (count - 1)
+    in
+    loop from until |> String.concat "\n\n"
+\end{lstlisting}
+
+\problem[Binary Search (medium)]
+Implement a binary search algorithm.
+
+\begin{lstlisting}[language=OCaml]
+let find arr value =
+  let rec loop left right =
+    if left > right then
+      Error "value not in array"
+    else
+      let mid = left + (right - left) / 2 in
+      let mid_val = arr.(mid) in
+
+      if mid_val = value then
+        Ok mid
+      else if mid_val < value then
+        loop (mid + 1) right
+      else
+        loop left (mid - 1)
+  in
+  loop 0 (Array.length arr - 1)
 \end{lstlisting}
 
 \problem[Binary Search Tree (easy)]
@@ -374,6 +471,140 @@ let leap_year year =
         false
 \end{lstlisting}
 
+\problem[List Ops (medium)]
+Implement basic list operations.
+
+In functional languages list operations like \code{length}, \code{map}, and \code{reduce} are very common.
+Implement a series of basic list operations, without using existing functions.
+
+The precise number and names of the operations to be implemented will be track dependent to avoid conflicts with existing names, but the general operations you will implement include:
+\begin{itemize}
+  \item \code{append} given two lists, add all items in the second list to the end of the first list
+  \item \code{concatenate} given a series of lists, combine all items in all lists into one flattened list
+  \item \code{filter} given a predicate and a list, return the list of all items for which \code{predicate(item)} is True
+  \item \code{length} given a list, return the total number of items within it
+  \item \code{map} given a function and a list, return the list of the results of applying \code{function(item)} on all items
+  \item \code{foldl} given a function, a list, and initial accumulator, fold (reduce) each item into the accumulator from the left
+  \item \code{foldr} given a function, a list, and an initial accumulator, fold (reduce) each item into the accumulator from the right
+  \item \code{reverse} given a list, return a list with all the original items, but in reversed order
+\end{itemize}
+
+Note, the ordering in which arguments are passed to the fold functions (\code{foldl}, \code{foldr}) is significant.
+
+\begin{lstlisting}[language=OCaml]
+let length xs =
+  let rec aux acc = function
+    | [] -> acc
+    | _ :: t -> aux (acc + 1) t
+  in
+  aux 0 xs
+
+let reverse xs =
+  let rec aux acc = function
+    | [] -> acc
+    | h :: t -> aux (h :: acc) t
+  in
+  aux [] xs
+
+let map ~f xs =
+  let rec aux acc = function
+    | [] -> acc
+    | h :: t -> aux (f h :: acc) t
+  in
+  reverse (aux [] xs)
+
+let filter ~f xs =
+  let rec aux acc = function
+    | [] -> acc
+    | h :: t ->
+      if f h then aux (h :: acc) t
+      else aux acc t
+  in
+  reverse (aux [] xs)
+
+let fold ~init ~f xs =
+  let rec aux acc = function
+    | [] -> acc
+    | h :: t -> aux (f acc h) t
+  in
+  aux init xs
+
+let append list1 list2 =
+  fold ~init:list2 ~f:(fun acc x -> x :: acc) (reverse list1)
+
+let concat lists =
+  let rec aux acc = function
+    | [] -> acc
+    | [] :: rest -> aux acc rest
+    | (h :: t) :: rest -> aux (h :: acc) (t :: rest)
+  in
+  reverse (aux [] lists)
+\end{lstlisting}
+
+\problem[Luhn (medium)]
+Determine whether a number is valid according to the \textit{Luhn formula}.
+The number will be provided as a string.
+
+Strings of length 1 or less are not valid.
+Spaces are allowed in the input, but they should be stripped before checking.
+All other non-digit characters are disallowed.
+
+\begin{lstlisting}[language=OCaml]
+open Base
+
+let valid str =
+  if not (String.for_all str ~f:(fun c -> Char.is_digit c || Char.is_whitespace c)) then
+    false
+  else
+    let digits = str
+      |> String.filter ~f:Char.is_digit
+      |> String.to_list
+      |> List.map ~f:(fun c -> Char.to_int c - Char.to_int '0')
+    in
+    if List.length digits <= 1 then false
+    else
+      digits
+      |> List.rev
+      |> List.mapi ~f:(fun i digit ->
+          if i % 2 = 1 then
+            let doubled = digit * 2 in
+            if doubled > 9 then doubled - 9 else doubled
+          else digit)
+      |> List.fold_left ~init:0 ~f:(+)
+      |> fun sum -> sum % 10 = 0
+\end{lstlisting}
+
+\problem[Matching Brackets (medium)]
+Given a string containing brackets, braces or parentheses or any combination thereof, verify that any and all pairs are matched and nested correctly.
+Any other characters should be ignored.
+
+\begin{lstlisting}[language=OCaml]
+open Base
+  let are_balanced str =
+    let process_char stack c =
+      match c with
+      | '(' | '[' | '{' -> c :: stack
+  
+      | ')' ->
+          (match stack with
+          | '(' :: rest_of_stack -> rest_of_stack
+          | _ -> '#' :: stack)
+      | ']' ->
+          (match stack with
+          | '[' :: rest_of_stack -> rest_of_stack
+          | _ -> '#' :: stack)
+      | '}' ->
+          (match stack with
+          | '{' :: rest_of_stack -> rest_of_stack
+          | _ -> '#' :: stack)
+  
+      | _ -> stack
+    in
+  
+    let final_stack = String.fold str ~init:[] ~f:process_char in
+    List.is_empty final_stack
+\end{lstlisting}
+
 \problem[nucleotide Count (easy)]
 Given a string representing a DNA sequence, count how many of each nucleotide is present.
 If the string contains characters that aren't A, C, G, or T then it is invalid and you should signal an error.
@@ -414,6 +645,80 @@ let count_nucleotides s =
   count_nucleotides_helper (String.to_list s) empty
 \end{lstlisting}
 
+\problem[Palindrome Products (medium)]
+Detect palindrome products in a given range.
+
+A palindromic number is a number that remains the same when its digits are reversed.
+For example, \code{121} is a palindromic number but \code{112} is not.
+
+Given a range of numbers, find the largest and smallest palindromes which
+are products of two numbers within that range.
+
+Your solution should return the largest and smallest palindromes, along with the factors of each within the range.
+If the largest or smallest palindrome has more than one pair of factors within the range, then return all the pairs.
+
+\begin{lstlisting}[language=OCaml]
+type palindrome_products = {
+  value : int option;
+  factors : (int * int) list;
+}
+
+let is_palindrome n =
+  let rec reverse acc n =
+    if n = 0 then acc else reverse (acc * 10 + n mod 10) (n / 10)
+  in
+  n = reverse 0 n
+
+let find_factors_for_product product ~min ~max =
+  let factors = ref [] in
+  let i = ref min in
+  while !i * !i <= product && !i <= max do
+    if product mod !i = 0 then (
+      let j = product / !i in
+      if j >= !i && j <= max then
+        factors := (!i, j) :: !factors
+    );
+    incr i
+  done;
+  List.rev !factors
+
+let smallest ~min ~max =
+  if min > max then Error "min must be <= max"
+  else
+    let min_product = min * min in
+    let max_product = max * max in
+    let rec search product =
+      if product > max_product then None
+      else
+        if is_palindrome product then
+          let factors = find_factors_for_product product ~min ~max in
+          if factors <> [] then Some (product, factors)
+          else search (product + 1)
+        else search (product + 1)
+    in
+    match search min_product with
+    | None -> Ok {value = None; factors = []}
+    | Some (value, factors) -> Ok {value = Some value; factors = factors}
+
+let largest ~min ~max =
+  if min > max then Error "min must be <= max"
+  else
+    let min_product = min * min in
+    let max_product = max * max in
+    let rec search product =
+      if product < min_product then None
+      else
+        if is_palindrome product then
+          let factors = find_factors_for_product product ~min ~max in
+          if factors <> [] then Some (product, factors)
+          else search (product - 1)
+        else search (product - 1)
+    in
+    match search max_product with
+    | None -> Ok {value = None; factors = []}
+    | Some (value, factors) -> Ok {value = Some value; factors = factors}
+\end{lstlisting}
+
 \problem[Pangram (easy)]
 Your task is to figure out if a sentence is a pangram.
 A pangram is a sentence using every letter of the alphabet at least once.
@@ -431,6 +736,119 @@ let is_pangram sentence =
   |> List.dedup_and_sort ~compare:Char.compare
   |> List.length
   |> (=) 26
+\end{lstlisting}
+
+\problem[Phone Number (medium)]
+Clean up user-entered phone numbers so that they can be sent SMS messages.
+
+The \code{North American Numbering Plan (NANP)} is a telephone numbering system used by many countries in North America like the United States, Canada or Bermuda.
+All NANP-countries share the same international country code: \code{1}.
+
+NANP numbers are ten-digit numbers consisting of a three-digit Numbering Plan Area code, commonly known as \textit{area code}, followed by a seven-digit local number.
+The first three digits of the local number represent the \textit{exchange code}, followed by the unique four-digit number which is the \textit{subscriber number}.
+
+The format is usually represented as
+
+\code{NXX NXX-XXXX}
+
+where \code{N} is any digit from 2 through 9 and \code{X} is any digit from 0 through 9.
+
+Sometimes they also have the country code (represented as \code{1} or \code{+1}) prefixed.
+
+Your task is to clean up differently formatted telephone numbers by removing punctuation and the country code if present.
+
+For example, the inputs
+
+\begin{itemize}
+  \item \code{+1 (613)-995-0253}
+  \item \code{613-995-0253}
+  \item \code{1 613 995 0253}
+  \item \code{613.995.0253}
+\end{itemize}
+
+should all produce the output
+
+\code{6139950253}
+
+\begin{lstlisting}[language=OCaml]
+open Base
+
+let number phone_number =
+  let pre_validate str =
+    String.fold str ~init:(Ok ()) ~f:(fun acc c ->
+        match (acc, c) with
+        | Error e, _ -> Error e
+        | Ok (), c when Char.is_alpha c -> Error "letters not permitted"
+        | Ok (), c when Char.is_digit c -> Ok ()
+        | Ok (), ('(' | ')' | '.' | '-' | '+' | ' ') -> Ok ()
+        | Ok (), _ -> Error "punctuations not permitted")
+  in
+
+  let clean_digits str = String.filter str ~f:Char.is_digit in
+
+  let validate_length digits =
+    match String.length digits with
+    | 10 -> Ok digits
+    | 11 ->
+        if Char.equal (String.get digits 0) '1' then
+          Ok (String.sub digits ~pos:1 ~len:10)
+        else Error "11 digits must start with 1"
+    | len when len > 11 -> Error "more than 11 digits"
+    | _ -> Error "incorrect number of digits"
+  in
+
+  let validate_codes ten_digits =
+    match (String.get ten_digits 0, String.get ten_digits 3) with
+    | '0', _ -> Error "area code cannot start with zero"
+    | '1', _ -> Error "area code cannot start with one"
+    | _, '0' -> Error "exchange code cannot start with zero"
+    | _, '1' -> Error "exchange code cannot start with one"
+    | _, _ -> Ok ten_digits
+  in
+
+  pre_validate phone_number
+  |> Result.map ~f:(fun () -> clean_digits phone_number)
+  |> Result.bind ~f:validate_length
+  |> Result.bind ~f:validate_codes
+\end{lstlisting}
+
+\problem[Prime Factors (medium)]
+Compute the prime factors of a given natural number.
+
+A prime number is only evenly divisible by itself and 1.
+
+Note that 1 is not a prime number.
+
+\begin{lstlisting}[language=OCaml]
+open Base
+
+let factors_of (n : int64) =
+  let rec aux (acc : int64 list) (d : int64) (n : int64) =
+    if Int64.(n = 1L) then acc
+    else if Int64.(d * d > n) then n :: acc
+    else if Int64.(rem n d = 0L) then
+let factors_of (n : int64) =
+  let rec aux (acc : int64 list) (d : int64) (n : int64) =
+    if Int64.(n = 1L) then acc
+    else if Int64.(d * d > n) then n :: acc
+    else if Int64.(rem n d = 0L) then
+            aux (d :: acc) d Int64.(n / d)
+    else
+      let next_d = if Int64.(d = 2L) then 3L else Int64.(d + 2L) in
+      aux acc next_d n
+  in
+  
+  if Int64.(n <= 1L) then []
+  else
+    let acc_with_2s =
+      let rec remove_2s (acc : int64 list) (n : int64) =
+        if Int64.(rem n 2L <> 0L) then (acc, n)
+        else remove_2s (2L :: acc) Int64.(n / 2L)
+      in
+      remove_2s [] n
+    in
+    let factors, remaining_n = acc_with_2s in
+    List.rev (aux factors 3L remaining_n)
 \end{lstlisting}
 
 \problem[Raindrops (easy)]
@@ -453,6 +871,138 @@ let raindrop n =
 	if !res = "" then res := !res ^ string_of_int n;
 	!res
 \end{lstlisting}
+
+% \problem[React (hard)]
+% Implement a basic reactive system.
+% 
+% Reactive programming is a programming paradigm that focuses on how values are computed in terms of each other to allow a change to one value to automatically propagate to other values, like in a spreadsheet.
+% 
+% Implement a basic reactive system with cells with settable values (``input'' cells) and cells with values computed in terms of other cells (``compute'' cells).
+% Implement updates so that when an input value is changed, values propagate to reach a new stable system state.
+% 
+% In addition, compute cells should allow for registering change notification callbacks.
+% Call a cell's callbacks when the cell's value in a new stable state has changed from the previous stable state.
+% 
+% \begin{lstlisting}[language=OCaml]
+% open Base
+% 
+% (* --- TYPE DEFINITIONS --- *)
+% 
+% (* Unique identifiers for callbacks and cells. *)
+% type callback_id = int
+% type cell_id = int
+% 
+% (* Forward declarations are necessary for the mutually recursive types. *)
+% type 'a cell = {
+%   id: cell_id;
+%   computation: 'a computation;
+%   eq: 'a -> 'a -> bool;
+%   mutable last_value: 'a;
+%   mutable children: dependent list;
+%   mutable callbacks: (callback_id * ('a -> unit)) list;
+% }
+% and 'a computation =
+%   | Input of 'a ref
+%   | Compute1 of 'a cell * ('a -> 'a)
+%   | Compute2 of 'a cell * 'a cell * ('a -> 'a -> 'a)
+% (* A GADT (Generalized Algebraic Data Type) to store cells of different types
+%    in a single, heterogeneous list of children. *)
+% and dependent = D : 'a cell -> dependent
+% 
+% (* --- GLOBAL STATE --- *)
+% 
+% (* Counters to generate unique IDs. *)
+% let next_cell_id = ref 0
+% let next_callback_id = ref 0
+% 
+% (* --- HELPER FUNCTIONS --- *)
+% 
+% (* Creates a new cell record and assigns it a unique ID. *)
+% let new_cell computation eq initial_value =
+%   let id = !next_cell_id in
+%   Int.incr next_cell_id;
+%   { id; computation; eq; last_value = initial_value; children = []; callbacks = [] }
+% 
+% (* Registers a child cell as a dependent of a parent cell. *)
+% let add_child parent (D child_cell) =
+%   (* Avoid adding duplicate children. *)
+%   if not (List.exists parent.children ~f:(fun (D c) -> c.id = child_cell.id)) then
+%     parent.children <- (D child_cell) :: parent.children
+% 
+% (* --- API IMPLEMENTATION --- *)
+% 
+% let create_input_cell ~value ~eq =
+%   new_cell (Input (ref value)) eq value
+% 
+% let value_of cell =
+%   cell.last_value
+% 
+% let create_compute_cell_1 parent ~f ~eq =
+%   let initial_value = f (value_of parent) in
+%   let cell = new_cell (Compute1 (parent, f)) eq initial_value in
+%   add_child parent (D cell);
+%   cell
+% 
+% let create_compute_cell_2 p1 p2 ~f ~eq =
+%   let initial_value = f (value_of p1) (value_of p2) in
+%   let cell = new_cell (Compute2 (p1, p2, f)) eq initial_value in
+%   add_child p1 (D cell);
+%   add_child p2 (D cell);
+%   cell
+% 
+% let set_value cell new_val =
+%   match cell.computation with
+%   | Input r ->
+%       (* Only proceed if the new value is actually different. *)
+%       if not (cell.eq cell.last_value new_val) then (
+%         (* 1. Update the underlying mutable reference of the input cell. *)
+%         r := new_val;
+% 
+%         (* 2. Propagate changes through the dependency graph using a breadth-first traversal. *)
+%         let q = Queue.create () in
+%         Queue.enqueue q (D cell);
+%         let processed = Hash_set.create (module Int) in
+%         let changed_cells = ref [] in
+% 
+%         while not (Queue.is_empty q) do
+%           let (D current_cell as dep) = Queue.dequeue_exn q in
+% 
+%           (* Process each cell only once per wave to handle diamond dependencies. *)
+%           if not (Hash_set.mem processed current_cell.id) then (
+%             Hash_set.add processed current_cell.id;
+%             let old_val = current_cell.last_value in
+%             let new_computed_val = match current_cell.computation with
+%               | Input r_inner -> !r_inner
+%               | Compute1 (p, f) -> f p.last_value
+%               | Compute2 (p1, p2, f) -> f p1.last_value p2.last_value
+%             in
+% 
+%             (* If this cell's value changed, update it and enqueue its children. *)
+%             if not (current_cell.eq old_val new_computed_val) then (
+%               current_cell.last_value <- new_computed_val;
+%               changed_cells := dep :: !changed_cells;
+%               List.iter current_cell.children ~f:(fun child -> Queue.enqueue q child)
+%             )
+%           )
+%         done;
+% 
+%         (* 3. After propagation, fire callbacks for all cells that changed value. *)
+%         List.iter !changed_cells ~f:(fun (D c) ->
+%           List.iter c.callbacks ~f:(fun (_, k) -> k c.last_value)
+%         )
+%       )
+%   | _ -> failwith "Cannot set value of a compute cell."
+% 
+% let add_callback cell ~k =
+%   let id = !next_callback_id in
+%   Int.incr next_callback_id;
+%   cell.callbacks <- (id, k) :: cell.callbacks;
+%   id
+% 
+% let remove_callback cell cb_id =
+%   cell.callbacks <- List.filter cell.callbacks ~f:(fun (id, _) -> not (Int.equal id cb_id))
+% 
+% \end{lstlisting}
 
 \problem[Reverse String (easy)]
 Reverse a given string.
@@ -480,6 +1030,103 @@ let to_rna seq =
     | `G -> `C
     | `T -> `A
   ) seq
+\end{lstlisting}
+
+\problem[Roman Numerals (medium)]
+Your task is to convert a number from Arabic numerals to Roman numerals.
+
+For this exercise, we are only concerned about traditional Roman numerals, in which the largest number is MMMCMXCIX (or 3,999).
+
+\begin{lstlisting}[language=OCaml]
+let to_roman n =
+  let numerals = [
+    (1000, "M");
+    (900, "CM");
+    (500, "D");
+    (400, "CD");
+    (100, "C");
+    (90, "XC");
+    (50, "L");
+    (40, "XL");
+    (10, "X");
+    (9, "IX");
+    (5, "V");
+    (4, "IV");
+    (1, "I")
+  ] in
+
+  let rec build_roman_string acc remaining_value numerals_list =
+    match numerals_list with
+    | [] -> acc
+    | (value, symbol) :: rest_of_numerals ->
+      if remaining_value >= value then
+        build_roman_string (acc ^ symbol) (remaining_value - value) numerals_list
+      else
+        build_roman_string acc remaining_value rest_of_numerals
+  in
+
+  build_roman_string "" n numerals
+\end{lstlisting}
+
+\problem[Run Length Encoding (medium)]
+Implement run-length encoding and decoding.
+
+Run-length encoding (RLE) is a simple form of data compression, where runs (consecutive data elements) are replaced by just one data value and count.
+
+For example we can represent the original 53 characters with only 13.
+
+\begin{verbatim}
+"WWWWWWWWWWWWBWWWWWWWWWWWWBBBWWWWWWWWWWWWWWWWWWWWWWWWB"  ->  "12WB12W3B24WB"
+\end{verbatim}
+
+RLE allows the original data to be perfectly reconstructed from the compressed data, which makes it a lossless data compression.
+
+\begin{verbatim}
+"AABCCCDEEEE"  ->  "2AB3CD4E"  ->  "AABCCCDEEEE"
+\end{verbatim}
+
+For simplicity, you can assume that the unencoded string will only contain the letters A through Z (either lower or upper case) and whitespace.
+This way data to be encoded will never contain any numbers and numbers inside data to be decoded always represent the count for the following character.
+
+\begin{lstlisting}[language=OCaml]
+open Base
+
+let encode str =
+  let len = String.length str in
+  if len = 0 then ""
+  else
+    let rec aux acc count char_to_repeat index =
+      if index = len then
+        let count_str = if count > 1 then Int.to_string count else "" in
+        acc ^ count_str ^ (Char.to_string char_to_repeat)
+      else
+        let current_char = String.get str index in
+        if Char.equal current_char char_to_repeat then
+          aux acc (count + 1) char_to_repeat (index + 1)
+        else
+          let count_str = if count > 1 then Int.to_string count else "" in
+          let new_acc = acc ^ count_str ^ (Char.to_string char_to_repeat) in
+          aux new_acc 1 current_char (index + 1)
+    in
+    aux "" 1 (String.get str 0) 1
+
+let decode str =
+  let len = String.length str in
+  let rec aux acc num_buffer index =
+    if index = len then acc
+    else
+      let char = String.get str index in
+      if Char.is_digit char then
+        aux acc (num_buffer ^ (Char.to_string char)) (index + 1)
+      else
+        let count =
+          if String.is_empty num_buffer then 1
+          else Int.of_string num_buffer
+        in
+        let repeated_str = String.make count char in
+        aux (acc ^ repeated_str) "" (index + 1)
+  in
+  aux "" "" 0
 \end{lstlisting}
 
 \problem[Sieve (easy)]
@@ -579,3 +1226,76 @@ let is_scalene a b c =
 	is_triangle a b c && a <> b && b <> c && a <> c
 \end{lstlisting}
 
+\problem[Word Count (medium)]
+Your task is to count how many times each word occurs in a subtitle of a drama.
+
+The subtitles from these dramas use only ASCII characters.
+
+The characters often speak in casual English, using contractions like \code{they're} or \code{it's}.
+Though these contractions come from two words (e.g. \code{we are}), the contraction \code{we're} is considered a single word.
+
+Words can be separated by any form of punctuation (e.g. ":", "!", or "?") or whitespace (e.g. \texttt{\textbackslash t}, \texttt{\textbackslash n}, or " ").
+The only punctuation that does not separate words is the apostrophe in contractions.
+
+Numbers are considered words.
+If the subtitles say \code{It costs 100 dollars.} then \code{100} will be its own word.
+
+Words are case insensitive.
+For example, the word \code{you} occurs three times in the following sentence:
+
+\begin{quote}
+  \code{You come back, you hear me? DO YOU HEAR ME?}
+\end{quote}
+
+The ordering of the word counts in the results doesn't matter.
+
+Here's an example that incorporates several of the elements discussed above:
+\begin{itemize}
+  \item simple words
+  \item contractions
+  \item numbers
+  \item case insensitive words
+  \item punctuation (including apostrophes) to separate words
+  \item different forms of whitespace to separate words
+\end{itemize}
+
+\begin{verbatim}
+"That's the password: 'PASSWORD 123'!", cried the Special Agent.\nSo I fled.
+\end{verbatim}
+
+The mapping for this subtitle would be:
+
+\begin{verbatim}
+123: 1
+agent: 1
+cried: 1
+fled: 1
+i: 1
+password: 2
+so: 1
+special: 1
+that's: 1
+the: 2
+\end{verbatim}
+
+\begin{lstlisting}[language=OCaml]
+open Base
+
+let word_count sentence =
+  let lower_sentence = String.lowercase sentence in
+
+  let words =
+      let is_word_char c = Char.is_alphanum c || Char.equal c '\'' in
+      String.map lower_sentence ~f:(fun c -> if is_word_char c then c else ' ')
+      |> String.split ~on:' '
+      |> List.map ~f:(fun w -> String.strip ~drop:(fun c -> Char.equal c '\'') w)
+      |> List.filter ~f:(fun w -> not (String.is_empty w))
+  in
+
+  List.fold words ~init:(Map.empty (module String)) ~f:(fun counts word ->
+    Map.update counts word ~f:(function
+      | None -> 1
+      | Some count -> count + 1
+    )
+  )
+\end{lstlisting}

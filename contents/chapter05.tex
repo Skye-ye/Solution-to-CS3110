@@ -58,8 +58,8 @@ let eq_first_two = function
 \problem[library]
 Consult the \code{List} standard library to solve these exercises:
 \begin{itemize}
-  \item Write a function that takes an \code{int list} and returns the fifth element of that list, if such an element exists. If the list has fewer than five elements, return 0. Hint: \code{List.length} and \code{List.nth}.
-  \item Write a function that takes an \code{int list} and returns the list sorted in descending order. Hint: \code{List.sort} with \code{Stdlib.compare} as its first argument, and \code{List.rev}.
+  \item Write a function that takes an \code{int list} and returns the fifth element of that list, if such an element exists. If the list has fewer than five elements, return 0. \textit{Hint: \code{List.length} and \code{List.nth}.}
+  \item Write a function that takes an \code{int list} and returns the list sorted in descending order. \textit{Hint: \code{List.sort} with \code{Stdlib.compare} as its first argument, and \code{List.rev}.}
 \end{itemize}
 
 \begin{lstlisting}[language=OCaml]
@@ -72,8 +72,8 @@ let sort_list_descending lst =
 
 \problem[library puzzle]
 \begin{itemize}
-  \item Write a function that returns the last element of a list. Your function may assume that the list is non-empty. Hint: Use two library functions, and do not write any pattern matching code of your own.
-  \item Write a function \code{any\_zeros : int list -> bool} that returns \B{true} if and only if the input list contains at least one 0. Hint: use one library function, and do not write any pattern matching code of your own.
+  \item Write a function that returns the last element of a list. Your function may assume that the list is non-empty. \textit{Hint: Use two library functions, and do not write any pattern matching code of your own.}
+  \item Write a function \code{any\_zeros : int list -> bool} that returns \B{true} if and only if the input list contains at least one 0. \textit{Hint: use one library function, and do not write any pattern matching code of your own.}
 \end{itemize}
 Your solutions will be only one or two lines of code each.
 
@@ -261,7 +261,7 @@ let is_before date1 date2 =
 \end{lstlisting}
 
 \problem[earliest date]
-Write a function \code{earliest : (int * int * int) list -> (int * int * int) option}. It evaluates to \code{None} if the input list is empty, and to \code{Some d} if date \code{d} is the earliest date in the list. Hint: use \code{is\_before}.
+Write a function \code{earliest : (int * int * int) list -> (int * int * int) option}. It evaluates to \code{None} if the input list is empty, and to \code{Some d} if date \code{d} is the earliest date in the list. \textit{Hint: use \code{is\_before}.}
 
 \begin{lstlisting}[language=OCaml]
 let rec earliest = function
@@ -349,7 +349,7 @@ let quadrant_when = function
 
 
 \problem[depth]
-Write a function \code{depth : 'a tree -> int} that returns the number of nodes in any longest path from the root to a leaf. For example, the depth of an empty tree (simply \code{Leaf}) is 0. Hint: there is a library function \code{max : 'a -> 'a -> 'a}.
+Write a function \code{depth : 'a tree -> int} that returns the number of nodes in any longest path from the root to a leaf. For example, the depth of an empty tree (simply \code{Leaf}) is 0. \textit{Hint:} there is a library function \code{max : 'a -> 'a -> 'a}.
 
 \begin{lstlisting}[language=OCaml]
 type 'a tree = Leaf | Node of 'a * 'a tree * 'a tree
