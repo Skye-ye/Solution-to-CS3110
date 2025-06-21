@@ -1,3 +1,5 @@
+\clearpage
+\phantomsection
 \section*{Appendix. More OCaml}
 \addcontentsline{toc}{section}{Appendix. More OCaml}
 
@@ -822,11 +824,6 @@ Note that 1 is not a prime number.
 \begin{lstlisting}[language=OCaml]
 open Base
 
-let factors_of (n : int64) =
-  let rec aux (acc : int64 list) (d : int64) (n : int64) =
-    if Int64.(n = 1L) then acc
-    else if Int64.(d * d > n) then n :: acc
-    else if Int64.(rem n d = 0L) then
 let factors_of (n : int64) =
   let rec aux (acc : int64 list) (d : int64) (n : int64) =
     if Int64.(n = 1L) then acc
